@@ -12,6 +12,17 @@ export type { Db } from "./db/client";
 export type { Http } from "./http";
 export type { Secrets, TimeWindow } from "./sources/types";
 
+/** How a Source's collection is going: when it last succeeded and when and why it last failed. */
+export interface SourceStatus {
+  sourceId: string;
+  lastSucceededAt: Date | null;
+  lastError: string | null;
+  lastErrorAt: Date | null;
+}
+
+/** The most of an error message kept on a Source; enough to diagnose, small enough to show. */
+const ERROR_LENGTH = 2000;
+
 export interface RankedItem {
   rank: number;
   title: string;
@@ -121,18 +132,42 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     const adapter = findAdapter(sourceId);
     if (!adapter) throw new Error(`Unknown Source: ${sourceId}`);
 
-    // Fetch and validate everything first, so a bad answer leaves the stored rankings untouched.
-    const rankings = await adapter.fetchRankings(http, now, secrets);
+    try {
+      // Fetch and validate everything first, so a bad answer leaves the stored rankings untouched.
+      const rankings = await adapter.fetchRankings(http, now, secrets);
 
-    await db.transaction(async (tx) => {
-      await tx
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(sources)
+          .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now })
+          .onConflictDoUpdate({
+            target: sources.id,
+            set: { regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now },
+          });
+        for (const ranking of rankings) await replaceRanking(tx, adapter, ranking, now);
+      });
+    } catch (error) {
+      // The last good Source Ranking and its success time stay; only the failure is recorded.
+      const lastError = (error instanceof Error ? error.message : String(error)).slice(0, ERROR_LENGTH);
+      await db
         .insert(sources)
-        .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now })
-        .onConflictDoUpdate({
-          target: sources.id,
-          set: { regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now },
-        });
-      for (const ranking of rankings) await replaceRanking(tx, adapter, ranking, now);
+        .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastError, lastErrorAt: now })
+        .onConflictDoUpdate({ target: sources.id, set: { lastError, lastErrorAt: now } });
+      throw error;
+    }
+  }
+
+  /** Every Source in the order of the Source config, including those never ingested. */
+  async function getSourceStatuses(): Promise<SourceStatus[]> {
+    const rows = await db.select().from(sources);
+    return adapters.map(({ id }) => {
+      const row = rows.find((candidate) => candidate.id === id);
+      return {
+        sourceId: id,
+        lastSucceededAt: row?.lastSucceededAt ?? null,
+        lastError: row?.lastError ?? null,
+        lastErrorAt: row?.lastErrorAt ?? null,
+      };
     });
   }
 
@@ -197,7 +232,7 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     });
   }
 
-  return { ingest, getSourceRanking, getOverview };
+  return { ingest, getSourceRanking, getOverview, getSourceStatuses };
 }
 
 export type DomainCore = ReturnType<typeof createDomainCore>;
