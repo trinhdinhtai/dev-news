@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { sourceIds } from "@/domain";
@@ -58,25 +59,25 @@ export default async function SourcePage({ params }: Props) {
         </section>
       ) : (
         <div className="ledger-panel">
-          <table className="ledger">
+          <table className="ledger" style={{ "--figure-count": display.figures.length } as CSSProperties}>
             <caption className="visually-hidden">{display.name} daily Source Ranking</caption>
             <thead>
               <tr>
                 <th scope="col" className="ledger__rank">
                   Rank
                 </th>
-                <th scope="col">Story</th>
-                <th scope="col" className="ledger__figure">
-                  Points
-                </th>
-                <th scope="col" className="ledger__figure">
-                  Comments
-                </th>
+                <th scope="col">{display.itemLabel}</th>
+                {display.figures.map((figure) => (
+                  <th key={figure.metric} scope="col" className="ledger__figure">
+                    {figure.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {ranking.items.map((item) => {
-                const host = hostOf(item.url);
+                // A repo names its language; anything else names the site it links to.
+                const origin = item.programmingLanguage ?? hostOf(item.url);
                 return (
                   <tr key={item.rank}>
                     <td className="ledger__rank measured">{item.rank}</td>
@@ -84,16 +85,15 @@ export default async function SourcePage({ params }: Props) {
                       <a className="ledger__link" href={item.url} target="_blank" rel="noopener noreferrer">
                         {item.title}
                       </a>
-                      {host && <span className="ledger__host">{host}</span>}
+                      {item.description && <p className="ledger__description">{item.description}</p>}
+                      {origin && <span className="ledger__host">{origin}</span>}
                     </td>
-                    <td className="ledger__figure measured">
-                      {figures.format(item.metrics.points ?? 0)}
-                      <span className="ledger__unit"> points</span>
-                    </td>
-                    <td className="ledger__figure measured">
-                      {figures.format(item.metrics.comments ?? 0)}
-                      <span className="ledger__unit"> comments</span>
-                    </td>
+                    {display.figures.map((figure) => (
+                      <td key={figure.metric} className="ledger__figure measured">
+                        {figures.format(item.metrics[figure.metric] ?? 0)}
+                        <span className="ledger__unit"> {figure.unit}</span>
+                      </td>
+                    ))}
                   </tr>
                 );
               })}
@@ -103,7 +103,7 @@ export default async function SourcePage({ params }: Props) {
       )}
 
       <footer className="screen__foot">
-        <p>{display.credit} Each story opens at its source in a new tab.</p>
+        <p>{display.credit} Each {display.itemLabel.toLowerCase()} opens at its source in a new tab.</p>
       </footer>
     </main>
   );
