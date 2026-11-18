@@ -79,7 +79,8 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={sourceId}>
                       <SidebarMenuButton
-                        isActive={pathname === href}
+                        // Each Time Window of the Source lives under its path.
+                        isActive={pathname === href || pathname.startsWith(`${href}/`)}
                         tooltip={name}
                         render={<Link href={href} onClick={close} />}
                       >
