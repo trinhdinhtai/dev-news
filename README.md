@@ -21,6 +21,10 @@ pnpm dev                      # http://localhost:3000
 
 The web app only reads the database. A Source's page stays empty until `pnpm ingest` has run for it. GitHub Trending needs `GITHUB_TOKEN` in `.env` to run more than once or twice an hour.
 
+## Languages
+
+The interface is in English (the default, at the bare paths) and Vietnamese (under `/vi`). A first visit picks the language from the browser's `Accept-Language`; the switch in the top bar changes it, and the `NEXT_LOCALE` cookie remembers the choice for a year. `src/proxy.ts` does that routing with next-intl. Every interface string lives in `src/i18n/messages/en.json` and `vi.json`: keys are typed against `en.json`, and a test fails when `vi.json` lacks a key. Each page is built once per language. Dates show in the viewer's own time zone.
+
 ## Collection
 
 Each Source in the Source config (`src/domain/sources/`) sets `intervalMinutes`: Hacker News every 30 minutes, GitHub Trending hourly. `pnpm ingest` with no arguments ingests the Sources whose interval has passed since they were last tried, one after another, so a failing Source is retried at its own pace. A Source that fails keeps its last good Source Ranking and success time; its error and the moment are stored on the Source, the other Sources are still ingested, and the run exits 1. Every answer a Source gives is kept in `raw_responses` for seven days; at these intervals that is about 60 to 70 MB once Postgres compresses it, mostly GitHub Trending's pages. Requests to Sources carry the User-Agent `dev-news/0.1 (+https://github.com/trinhdinhtai/dev-news)`.
