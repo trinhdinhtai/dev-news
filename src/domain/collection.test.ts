@@ -43,3 +43,43 @@ describe("A failed ingest", () => {
     ]);
   });
 });
+
+describe("Raw Source responses", () => {
+  beforeEach(resetTestDb);
+
+  it("keeps what the Source answered, with the Source and the moment", async () => {
+    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+
+    await core.ingest("hacker-news", HN_AT);
+    const responses = await core.getRawResponses("hacker-news");
+
+    expect(responses).toHaveLength(1);
+    expect(responses[0]).toMatchObject({ sourceId: "hacker-news", fetchedAt: HN_AT, status: 200 });
+    expect(new URL(responses[0].url).host).toBe("hn.algolia.com");
+    expect(JSON.parse(responses[0].body)).toEqual(hnDayResponse);
+  });
+
+  it("keeps a malformed answer too, so the failure can be diagnosed", async () => {
+    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
+
+    await expect(core.ingest("hacker-news", HN_AT)).rejects.toThrow();
+    const responses = await core.getRawResponses("hacker-news");
+
+    expect(responses.map((response) => JSON.parse(response.body))).toEqual([{ hits: "nope" }]);
+  });
+
+  it("drops the responses of ingests more than a week old", async () => {
+    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+    const day = 24 * 60 * 60 * 1000;
+
+    await core.ingest("hacker-news", HN_AT);
+    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 6 * day));
+    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 8 * day));
+    const responses = await core.getRawResponses("hacker-news");
+
+    expect(responses.map((response) => response.fetchedAt)).toEqual([
+      new Date(HN_AT.getTime() + 8 * day),
+      new Date(HN_AT.getTime() + 6 * day),
+    ]);
+  });
+});

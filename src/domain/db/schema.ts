@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, primaryKey, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 /** Metrics a Source reports for an Item, such as points and comments; the keys differ per Source. */
 export type Metrics = Record<string, number>;
@@ -55,4 +55,21 @@ export const sourceRankings = pgTable(
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.sourceId, t.timeWindow, t.filter, t.rank] })],
+);
+
+/** What a Source answered during an ingest, kept for a while so a failure can be diagnosed. */
+export const rawResponses = pgTable(
+  "raw_responses",
+  {
+    id: serial("id").primaryKey(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
+    /** The moment of the ingest that made the request. */
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+    url: text("url").notNull(),
+    status: integer("status").notNull(),
+    body: text("body").notNull(),
+  },
+  (t) => [index("raw_responses_source_fetched_at").on(t.sourceId, t.fetchedAt)],
 );
