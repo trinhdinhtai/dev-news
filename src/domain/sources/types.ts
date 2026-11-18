@@ -35,5 +35,7 @@ export interface SourceAdapter {
   id: string;
   /** The language a Regional Source belongs to; null for every other Source. */
   regionalLanguage: string | null;
+  /** How often the scheduled collection run ingests this Source, in minutes. */
+  intervalMinutes: number;
   fetchRankings(http: Http, now: Date, secrets: Secrets): Promise<FetchedRanking[]>;
 }
