@@ -1,6 +1,7 @@
 "use client";
 
 import { LayoutGridIcon, NewspaperIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Sidebar,
   SidebarContent,
@@ -15,17 +16,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link, usePathname } from "@/i18n/navigation";
-import { sourceCategories, sourceDisplay } from "./sources/source-names";
-
-const sources = Object.entries(sourceDisplay).map(([sourceId, display]) => ({ sourceId, ...display }));
+import { sourceCategories, sourceDisplays } from "./sources/source-names";
 
 /** Each category holding at least one Source, with its Sources, in the order sourceCategories lists them. */
 const groups = sourceCategories
-  .map((category) => ({ ...category, sources: sources.filter((source) => source.category === category.id) }))
+  .map((id) => ({ id, sources: sourceDisplays.filter((source) => source.category === id) }))
   .filter((group) => group.sources.length > 0);
 
 /** The app's navigation: the Overview, then every Source grouped by category. */
 export function AppSidebar() {
+  const t = useTranslations("Nav");
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   // On a phone the sidebar is a sheet over the page; following a link should put it away.
@@ -38,7 +38,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/" onClick={close} aria-label="Dev News, home" />}>
+            <SidebarMenuButton size="lg" render={<Link href="/" onClick={close} aria-label={t("home")} />}>
               <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <NewspaperIcon />
               </span>
@@ -57,11 +57,11 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={pathname === "/"}
-                  tooltip="Overview"
+                  tooltip={t("overview")}
                   render={<Link href="/" onClick={close} />}
                 >
                   <LayoutGridIcon />
-                  <span>Overview</span>
+                  <span>{t("overview")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -70,13 +70,13 @@ export function AppSidebar() {
 
         {groups.map((group) => (
           <SidebarGroup key={group.id}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t(`categories.${group.id}`)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.sources.map(({ sourceId, name, icon: Icon }) => {
-                  const href = `/sources/${sourceId}`;
+                {group.sources.map(({ id, name, icon: Icon }) => {
+                  const href = `/sources/${id}`;
                   return (
-                    <SidebarMenuItem key={sourceId}>
+                    <SidebarMenuItem key={id}>
                       <SidebarMenuButton
                         // Each Time Window of the Source lives under its path.
                         isActive={pathname === href || pathname.startsWith(`${href}/`)}
