@@ -2,8 +2,11 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import type { Db } from "./db/client";
 import { items, type Metrics, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
-import { findAdapter } from "./sources";
+import { adapters, findAdapter } from "./sources";
 import type { FetchedRanking, SourceAdapter, TimeWindow } from "./sources/types";
+
+/** Every Source the domain core can ingest. */
+export const sourceIds: readonly string[] = adapters.map((adapter) => adapter.id);
 
 export type { Db } from "./db/client";
 export type { Http } from "./http";

@@ -1,0 +1,27 @@
+[
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "console",
+  "axes": "dark/grotesk-sans/chromatic-amber",
+  "hero": "none",
+  "nav": "top bar, wordmark only",
+  "footer": "one credit line",
+  "imagery": "none",
+  "photos": [],
+  "entry": "none",
+  "fingerprint": "app-ledger-panel",
+  "sections": [
+   "head",
+   "ledger",
+   "credit"
+  ],
+  "signature": "the ranking ledger, ranks and figures in the measured face",
+  "waived": [
+   "49b"
+  ],
+  "prompt": "Dev News: Hacker News daily Source Ranking page",
+  "date": "2026-11-18",
+  "mode": "build"
+ }
+]
