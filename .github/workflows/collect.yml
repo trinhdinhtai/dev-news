@@ -1,0 +1,49 @@
+# Scheduled collection (ADR-0001): ingests every Source that is due by its own interval
+# in the Source config, then revalidates the web app's cached pages for those Sources.
+name: Collect
+
+on:
+  schedule:
+    # The tick, not a Source's frequency: each run ingests only the Sources that are due.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: "Source ids to ingest now, space separated; empty ingests the due ones"
+        required: false
+        default: ""
+
+# One run at a time; a late run waits instead of ingesting the same Sources twice.
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Unquoted on purpose so each id becomes its own argument (globbing off); ingest rejects unknown ids.
+      - run: set -f; pnpm ingest $SOURCES
+        env:
+          SOURCES: ${{ inputs.sources }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # The workflow's own token is enough for GitHub Trending's REST calls.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVALIDATE_URL: ${{ vars.REVALIDATE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
