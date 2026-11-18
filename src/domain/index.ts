@@ -18,6 +18,7 @@ export interface RankedItem {
   url: string;
   description: string | null;
   thumbnailUrl: string | null;
+  programmingLanguage: string | null;
   publishedAt: Date | null;
   metrics: Metrics;
 }
@@ -53,6 +54,7 @@ async function replaceRanking(tx: Tx, adapter: SourceAdapter, ranking: FetchedRa
         description: item.description ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         contentLanguage: item.contentLanguage ?? null,
+        programmingLanguage: item.programmingLanguage ?? null,
         publishedAt: item.publishedAt ?? null,
         metrics: item.metrics,
         updatedAt: now,
@@ -66,6 +68,7 @@ async function replaceRanking(tx: Tx, adapter: SourceAdapter, ranking: FetchedRa
         description: sql`excluded.description`,
         thumbnailUrl: sql`excluded.thumbnail_url`,
         contentLanguage: sql`excluded.content_language`,
+        programmingLanguage: sql`excluded.programming_language`,
         publishedAt: sql`excluded.published_at`,
         metrics: sql`excluded.metrics`,
         updatedAt: sql`excluded.updated_at`,
@@ -126,6 +129,7 @@ export function createDomainCore({ db, http }: { db: Db; http: Http }) {
         url: items.url,
         description: items.description,
         thumbnailUrl: items.thumbnailUrl,
+        programmingLanguage: items.programmingLanguage,
         publishedAt: items.publishedAt,
         metrics: sourceRankings.metrics,
       })

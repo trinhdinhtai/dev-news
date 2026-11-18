@@ -11,6 +11,7 @@ export interface FetchedItem {
   description?: string | null;
   thumbnailUrl?: string | null;
   contentLanguage?: string | null;
+  programmingLanguage?: string | null;
   publishedAt?: Date | null;
   metrics: Metrics;
 }
