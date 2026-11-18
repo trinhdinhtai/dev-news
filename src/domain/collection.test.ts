@@ -183,3 +183,20 @@ describe("A collection run", () => {
     expect(results).toEqual([{ sourceId: "github-trending", ok: true }]);
   });
 });
+
+describe("Requests to Sources", () => {
+  beforeEach(resetTestDb);
+
+  it("name the app and where to reach it in the User-Agent, on every request to every Source", async () => {
+    const http = fakeHttp(everySource);
+
+    await createDomainCore({ db: testDb, http }).collect(HN_AT);
+
+    expect(new Set(http.requests.map((url) => url.host))).toEqual(
+      new Set(["github.com", "api.github.com", "hn.algolia.com"]),
+    );
+    for (const headers of http.headers) {
+      expect(headers.get("user-agent")).toBe("dev-news/0.1 (+https://github.com/trinhdinhtai/dev-news)");
+    }
+  });
+});
