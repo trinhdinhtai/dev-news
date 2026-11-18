@@ -43,6 +43,8 @@ async function bestStoriesSince(http: Http, sinceSeconds: number): Promise<Fetch
 export const hackerNews: SourceAdapter = {
   id: "hacker-news",
   regionalLanguage: null,
+  // The day's best stories move quickly.
+  intervalMinutes: 30,
   async fetchRankings(http, now) {
     const nowSeconds = Math.floor(now.getTime() / 1000);
     return [{ timeWindow: "day", filter: "", items: await bestStoriesSince(http, nowSeconds - DAY_SECONDS) }];

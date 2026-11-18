@@ -23,6 +23,15 @@ export interface SourceStatus {
 /** The most of an error message kept on a Source; enough to diagnose, small enough to show. */
 const ERROR_LENGTH = 2000;
 
+/**
+ * How early a Source counts as due. GitHub Actions starts scheduled runs late and
+ * unevenly, so a run a few minutes short of the interval still ingests.
+ */
+const DUE_TOLERANCE_MINUTES = 5;
+
+/** What a collection run did with one Source. */
+export type CollectResult = { sourceId: string; ok: true } | { sourceId: string; ok: false; error: string };
+
 /** How long raw Source responses are kept. */
 const RAW_RESPONSE_DAYS = 7;
 
@@ -35,15 +44,33 @@ export interface RawResponse {
   body: string;
 }
 
+/** What one request got back, before it is stored against its Source and ingest. */
+type RawAnswer = Omit<RawResponse, "sourceId" | "fetchedAt">;
+
 /** Wraps the HTTP layer so every answer it gets is kept, whether or not the adapter can read it. */
 function recordingHttp(http: Http) {
-  const answers: { url: string; status: number; body: string }[] = [];
+  const answers: RawAnswer[] = [];
   const recording: Http = async (url, init) => {
     const response = await http(url, init);
     answers.push({ url, status: response.status, body: await response.clone().text() });
     return response;
   };
   return { http: recording, answers };
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Whether a Source's interval has passed since it was last tried. A failed try counts,
+ * so a failing Source is retried at its own pace rather than on every scheduled run.
+ */
+function isDue(adapter: SourceAdapter, status: SourceStatus | undefined, now: Date) {
+  const tries = [status?.lastSucceededAt, status?.lastErrorAt].filter((moment) => moment != null);
+  if (tries.length === 0) return true;
+  const lastTry = Math.max(...tries.map((moment) => moment.getTime()));
+  return now.getTime() - lastTry >= (adapter.intervalMinutes - DUE_TOLERANCE_MINUTES) * 60 * 1000;
 }
 
 export interface RankedItem {
@@ -169,27 +196,32 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
             set: { regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now },
           });
         for (const ranking of rankings) await replaceRanking(tx, adapter, ranking, now);
+        await keepRawResponses(tx, adapter.id, now, recorder.answers);
       });
     } catch (error) {
       // The last good Source Ranking and its success time stay; only the failure is recorded.
-      const lastError = (error instanceof Error ? error.message : String(error)).slice(0, ERROR_LENGTH);
+      const lastError = errorMessage(error).slice(0, ERROR_LENGTH);
       await db
-        .insert(sources)
-        .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastError, lastErrorAt: now })
-        .onConflictDoUpdate({ target: sources.id, set: { lastError, lastErrorAt: now } });
+        .transaction(async (tx) => {
+          await tx
+            .insert(sources)
+            .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastError, lastErrorAt: now })
+            .onConflictDoUpdate({ target: sources.id, set: { lastError, lastErrorAt: now } });
+          await keepRawResponses(tx, adapter.id, now, recorder.answers);
+        })
+        // If even that fails (the database is down, say), the ingest's own error is the one to report.
+        .catch(() => {});
       throw error;
-    } finally {
-      // The Source row exists by now, whether the ingest succeeded or not.
-      await keepRawResponses(adapter.id, now, recorder.answers);
     }
   }
 
-  async function keepRawResponses(sourceId: string, now: Date, answers: { url: string; status: number; body: string }[]) {
+  /** Stores an ingest's raw responses and drops those older than RAW_RESPONSE_DAYS. The Source row must exist. */
+  async function keepRawResponses(tx: Tx, sourceId: string, now: Date, answers: RawAnswer[]) {
     if (answers.length > 0) {
-      await db.insert(rawResponses).values(answers.map((answer) => ({ sourceId, fetchedAt: now, ...answer })));
+      await tx.insert(rawResponses).values(answers.map((answer) => ({ sourceId, fetchedAt: now, ...answer })));
     }
     const cutoff = new Date(now.getTime() - RAW_RESPONSE_DAYS * 24 * 60 * 60 * 1000);
-    await db.delete(rawResponses).where(and(eq(rawResponses.sourceId, sourceId), lt(rawResponses.fetchedAt, cutoff)));
+    await tx.delete(rawResponses).where(and(eq(rawResponses.sourceId, sourceId), lt(rawResponses.fetchedAt, cutoff)));
   }
 
   /** The raw responses kept for a Source, newest ingest first, each ingest's in request order. */
@@ -205,6 +237,34 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
       .from(rawResponses)
       .where(eq(rawResponses.sourceId, sourceId))
       .orderBy(desc(rawResponses.fetchedAt), asc(rawResponses.id));
+  }
+
+  /**
+   * One collection run: ingests every due Source, or the named ones, one after another.
+   * A Source that fails is recorded and reported; it never stops the others.
+   */
+  async function collect(now: Date, { sourceIds: named }: { sourceIds?: readonly string[] } = {}) {
+    const statuses = await getSourceStatuses();
+    const chosen = adapters.filter((adapter) =>
+      named
+        ? named.includes(adapter.id)
+        : isDue(
+            adapter,
+            statuses.find((status) => status.sourceId === adapter.id),
+            now,
+          ),
+    );
+
+    const results: CollectResult[] = [];
+    for (const adapter of chosen) {
+      try {
+        await ingest(adapter.id, now);
+        results.push({ sourceId: adapter.id, ok: true });
+      } catch (error) {
+        results.push({ sourceId: adapter.id, ok: false, error: errorMessage(error) });
+      }
+    }
+    return results;
   }
 
   /** Every Source in the order of the Source config, including those never ingested. */
@@ -282,7 +342,7 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     });
   }
 
-  return { ingest, getSourceRanking, getOverview, getSourceStatuses, getRawResponses };
+  return { ingest, collect, getSourceRanking, getOverview, getSourceStatuses, getRawResponses };
 }
 
 export type DomainCore = ReturnType<typeof createDomainCore>;

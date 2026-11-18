@@ -66,6 +66,8 @@ function toItem(row: TrendingRow, repo: Repo): FetchedItem {
 export const githubTrending: SourceAdapter = {
   id: "github-trending",
   regionalLanguage: null,
+  // Trending moves slowly, and each ingest spends about 30 REST API calls.
+  intervalMinutes: 60,
   async fetchRankings(http, _now, secrets) {
     const windows: TimeWindow[] = ["day", "week"];
     const pages = await Promise.all(windows.map((timeWindow) => fetchTrending(http, timeWindow)));
