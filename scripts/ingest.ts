@@ -24,3 +24,23 @@ try {
 } finally {
   await db.$client.end();
 }
+
+// Tell the web app its cached data for this Source is stale. Skipped when no web app is configured.
+const webUrl = process.env.REVALIDATE_URL;
+const revalidateSecret = process.env.REVALIDATE_SECRET;
+if (webUrl && revalidateSecret) {
+  const response = await fetch(new URL("/api/revalidate", webUrl), {
+    method: "POST",
+    headers: { authorization: `Bearer ${revalidateSecret}`, "content-type": "application/json" },
+    body: JSON.stringify({ sourceIds: [sourceId] }),
+  }).catch((error: unknown) => error as Error);
+  if (response instanceof Error || !response.ok) {
+    const reason = response instanceof Error ? response.message : `answered ${response.status}`;
+    console.error(`Ingested, but revalidating ${webUrl} failed: ${reason}`);
+    process.exitCode = 1;
+  } else {
+    console.log(`Revalidated ${sourceId} on ${webUrl}.`);
+  }
+} else {
+  console.log("REVALIDATE_URL or REVALIDATE_SECRET is not set; cached pages stay as they are.");
+}
