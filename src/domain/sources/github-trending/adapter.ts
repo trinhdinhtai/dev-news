@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Http } from "../../http";
 import { fetchJson, fetchText } from "../fetch-source";
-import type { FetchedItem, FetchedRanking, SourceAdapter, TimeWindow } from "../types";
+import type { FetchedItem, FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "../types";
 
 const SINCE: Record<TimeWindow, string> = { day: "daily", week: "weekly" };
 
@@ -45,8 +45,10 @@ async function fetchTrending(http: Http, timeWindow: TimeWindow): Promise<Trendi
   return parseTrendingPage(await fetchText(http, url));
 }
 
-async function fetchRepo(http: Http, fullName: string): Promise<Repo> {
-  const headers = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" };
+async function fetchRepo(http: Http, fullName: string, secrets: Secrets): Promise<Repo> {
+  const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" };
+  // The token goes to the REST API only, never to the trending page.
+  if (secrets.githubToken) headers.authorization = `Bearer ${secrets.githubToken}`;
   return repoResponse.parse(await fetchJson(http, new URL(`https://api.github.com/repos/${fullName}`), headers));
 }
 
@@ -64,14 +66,15 @@ function toItem(row: TrendingRow, repo: Repo): FetchedItem {
 export const githubTrending: SourceAdapter = {
   id: "github-trending",
   regionalLanguage: null,
-  async fetchRankings(http) {
+  async fetchRankings(http, _now, secrets) {
     const windows: TimeWindow[] = ["day", "week"];
     const pages = await Promise.all(windows.map((timeWindow) => fetchTrending(http, timeWindow)));
 
-    // A repo trending in both Time Windows is looked up once.
+    // A repo trending in both Time Windows is looked up once, and one at a time, so
+    // hitting the rate limit stops the ingest at the first refused call.
     const names = [...new Set(pages.flat().map((row) => row.fullName))];
     const repos = new Map<string, Repo>();
-    for (const name of names) repos.set(name, await fetchRepo(http, name));
+    for (const name of names) repos.set(name, await fetchRepo(http, name, secrets));
 
     return windows.map(
       (timeWindow, i): FetchedRanking => ({

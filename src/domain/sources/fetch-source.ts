@@ -4,7 +4,13 @@ const USER_AGENT = "dev-news/0.1 (trending aggregator for developers)";
 
 async function get(http: Http, url: URL, headers: Record<string, string>): Promise<Response> {
   const response = await http(url.toString(), { headers: { "user-agent": USER_AGENT, ...headers } });
-  if (!response.ok) throw new Error(`${url.host} answered ${response.status}`);
+  if (!response.ok) {
+    const reset = response.headers.get("x-ratelimit-reset");
+    if (response.headers.get("x-ratelimit-remaining") === "0" && reset) {
+      throw new Error(`${url.host} rate limit reached; it resets at ${new Date(Number(reset) * 1000).toISOString()}`);
+    }
+    throw new Error(`${url.host} answered ${response.status}`);
+  }
   return response;
 }
 

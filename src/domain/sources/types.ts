@@ -24,10 +24,16 @@ export interface FetchedRanking {
   items: FetchedItem[];
 }
 
+/** Credentials some Sources need; each is optional so an unused one never has to be set. */
+export interface Secrets {
+  /** A GitHub token for the REST API, which allows 5,000 calls an hour instead of 60. */
+  githubToken?: string;
+}
+
 /** Everything the domain core needs to know about one Source. */
 export interface SourceAdapter {
   id: string;
   /** The language a Regional Source belongs to; null for every other Source. */
   regionalLanguage: string | null;
-  fetchRankings(http: Http, now: Date): Promise<FetchedRanking[]>;
+  fetchRankings(http: Http, now: Date, secrets: Secrets): Promise<FetchedRanking[]>;
 }

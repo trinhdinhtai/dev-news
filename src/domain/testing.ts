@@ -17,7 +17,8 @@ export async function resetTestDb() {
 /**
  * An HTTP layer that answers from recorded Source responses. A key is a host, or a
  * host and path with an optional query (`github.com/trending?since=daily`); the most
- * specific match wins. A string answers as HTML, anything else as JSON.
+ * specific match wins. A string answers as HTML, a function builds the whole Response,
+ * anything else answers as JSON.
  * Every requested URL and its headers are kept so a test can check what was asked for.
  */
 export function fakeHttp(responses: Record<string, unknown>): Http & { requests: URL[]; headers: Headers[] } {
@@ -32,6 +33,7 @@ export function fakeHttp(responses: Record<string, unknown>): Http & { requests:
     );
     if (key === undefined) return new Response("not found", { status: 404 });
     const body = responses[key];
+    if (typeof body === "function") return (body as () => Response)();
     if (typeof body === "string") return new Response(body, { headers: { "content-type": "text/html" } });
     return Response.json(body);
   };

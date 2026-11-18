@@ -144,4 +144,39 @@ describe("GitHub Trending Source Ranking", () => {
     expect(ranking.items).toEqual([]);
   });
 
+  it("calls the REST API with the GitHub token, and never sends it to the trending page", async () => {
+    const http = fakeHttp(githubResponses());
+    const core = createDomainCore({ db: testDb, http, secrets: { githubToken: "test-token" } });
+
+    await core.ingest("github-trending", NOW);
+
+    const authorizationByHost = http.requests.map((url, i) => [url.host, http.headers[i].get("authorization")]);
+    expect(authorizationByHost).toContainEqual(["api.github.com", "Bearer test-token"]);
+    expect(authorizationByHost.filter(([host, auth]) => host === "api.github.com" && auth !== "Bearer test-token")).toEqual([]);
+    expect(authorizationByHost.filter(([host, auth]) => host === "github.com" && auth !== null)).toEqual([]);
+  });
+
+  it("stops at the REST rate limit, keeps the old Source Ranking and says when the limit resets", async () => {
+    await createDomainCore({ db: testDb, http: fakeHttp(githubResponses()) }).ingest("github-trending", NOW);
+
+    const rateLimited = () =>
+      new Response(JSON.stringify({ message: "API rate limit exceeded" }), {
+        status: 403,
+        headers: { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1795000000" },
+      });
+    const limited = fakeHttp({
+      "github.com/trending?since=daily": dayHtml,
+      "github.com/trending?since=weekly": weekHtml,
+      "api.github.com": rateLimited,
+    });
+    const core = createDomainCore({ db: testDb, http: limited });
+
+    await expect(core.ingest("github-trending", new Date(NOW.getTime() + 60 * 60 * 1000))).rejects.toThrow(
+      "api.github.com rate limit reached; it resets at 2026-11-18T11:06:40.000Z",
+    );
+    expect(limited.requests.filter((url) => url.host === "api.github.com")).toHaveLength(1);
+    const ranking = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day" });
+    expect(ranking.lastSucceededAt).toEqual(NOW);
+    expect(ranking.items).toHaveLength(15);
+  });
 });

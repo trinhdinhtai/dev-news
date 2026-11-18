@@ -3,14 +3,14 @@ import type { Db } from "./db/client";
 import { items, type Metrics, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
 import { adapters, findAdapter } from "./sources";
-import type { FetchedRanking, SourceAdapter, TimeWindow } from "./sources/types";
+import type { FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "./sources/types";
 
 /** Every Source the domain core can ingest. */
 export const sourceIds: readonly string[] = adapters.map((adapter) => adapter.id);
 
 export type { Db } from "./db/client";
 export type { Http } from "./http";
-export type { TimeWindow } from "./sources/types";
+export type { Secrets, TimeWindow } from "./sources/types";
 
 export interface RankedItem {
   rank: number;
@@ -94,13 +94,13 @@ async function replaceRanking(tx: Tx, adapter: SourceAdapter, ranking: FetchedRa
  * The domain core. Its write side, `ingest`, pulls a Source through its adapter;
  * its read side answers the web app. Nothing outside it talks to a Source.
  */
-export function createDomainCore({ db, http }: { db: Db; http: Http }) {
+export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Http; secrets?: Secrets }) {
   async function ingest(sourceId: string, now: Date): Promise<void> {
     const adapter = findAdapter(sourceId);
     if (!adapter) throw new Error(`Unknown Source: ${sourceId}`);
 
     // Fetch and validate everything first, so a bad answer leaves the stored rankings untouched.
-    const rankings = await adapter.fetchRankings(http, now);
+    const rankings = await adapter.fetchRankings(http, now, secrets);
 
     await db.transaction(async (tx) => {
       await tx
