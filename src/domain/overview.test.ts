@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import repos from "./sources/github-trending/__fixtures__/repos.json";
 import hnDayResponse from "./sources/hacker-news/__fixtures__/search-day.json";
 import { createDomainCore } from "./index";
+import { hackerNews } from "./sources/hacker-news/adapter";
+import type { SourceAdapter } from "./sources/types";
 import { fakeHttp, resetTestDb, testDb } from "./testing";
 
 const trendingPage = (name: string) =>
@@ -28,7 +30,7 @@ describe("Overview", () => {
     await core.ingest("hacker-news", HN_AT);
     await core.ingest("github-trending", GITHUB_AT);
 
-    const overview = await core.getOverview();
+    const overview = await core.getOverview({ uiLanguage: "en" });
 
     expect(overview.map((block) => block.sourceId)).toEqual(["github-trending", "hacker-news"]);
     expect(overview[0].lastSucceededAt).toEqual(GITHUB_AT);
@@ -55,7 +57,7 @@ describe("Overview", () => {
     const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
     await core.ingest("hacker-news", HN_AT);
 
-    const overview = await core.getOverview();
+    const overview = await core.getOverview({ uiLanguage: "en" });
 
     expect(overview.map((block) => block.sourceId)).toEqual(["hacker-news"]);
   });
@@ -63,6 +65,44 @@ describe("Overview", () => {
   it("is empty before any Source has been ingested", async () => {
     const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
 
-    expect(await core.getOverview()).toEqual([]);
+    expect(await core.getOverview({ uiLanguage: "en" })).toEqual([]);
+  });
+});
+
+describe("Overview and the interface language", () => {
+  beforeEach(resetTestDb);
+
+  /** A Regional Source in Vietnamese, standing in for one such as Viblo. */
+  const regional: SourceAdapter = {
+    id: "regional-vi",
+    regionalLanguage: "vi",
+    intervalMinutes: 60,
+    async fetchRankings() {
+      const item = { externalId: "1", title: "Một bài viết", url: "https://example.com/1", metrics: {} };
+      return [{ timeWindow: "day", filter: "", items: [item] }];
+    },
+  };
+
+  async function ingestBoth() {
+    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource), adapters: [hackerNews, regional] });
+    await core.ingest("hacker-news", HN_AT);
+    await core.ingest("regional-vi", HN_AT);
+    return core;
+  }
+
+  it("hides a Regional Source when the interface is in another language", async () => {
+    const core = await ingestBoth();
+
+    const overview = await core.getOverview({ uiLanguage: "en" });
+
+    expect(overview.map((block) => block.sourceId)).toEqual(["hacker-news"]);
+  });
+
+  it("shows a Regional Source when the interface is in its language", async () => {
+    const core = await ingestBoth();
+
+    const overview = await core.getOverview({ uiLanguage: "vi" });
+
+    expect(overview.map((block) => block.sourceId)).toEqual(["hacker-news", "regional-vi"]);
   });
 });

@@ -10,7 +10,7 @@ import { sourceDisplay } from "./sources/source-names";
 
 // Built once and served static; ingesting a Source revalidates its tag (see /api/revalidate).
 export default async function Overview() {
-  const overview = await cachedOverview();
+  const overview = await cachedOverview("en");
 
   return (
     <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
