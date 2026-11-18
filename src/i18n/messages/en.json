@@ -1,1 +1,94 @@
-{}
+{
+  "Metadata": {
+    "title": "Dev News",
+    "description": "What developers are reading today, ranked by each Source.",
+    "sourceTitle": "{source} {window, select, day {today} other {this week}}, Dev News"
+  },
+  "Layout": {
+    "skipLink": "Skip to the ranking"
+  },
+  "Nav": {
+    "home": "Dev News, home",
+    "overview": "Overview",
+    "toggleSidebar": "Toggle sidebar",
+    "sidebar": "Sidebar",
+    "sidebarDescription": "The app's navigation.",
+    "close": "Close",
+    "language": "Language",
+    "categories": {
+      "code": "Code",
+      "news": "News",
+      "articles": "Articles",
+      "videos": "Videos"
+    }
+  },
+  "Overview": {
+    "heading": "Today on every Source",
+    "intro": "The top five of each Source’s own daily ranking. Scores are not compared across Sources.",
+    "noRanking": "Rankings appear here after a Source’s first collection run.",
+    "fullRanking": "Full ranking",
+    "caption": "{source}, top five today"
+  },
+  "Ranking": {
+    "updated": "Updated",
+    "rank": "Rank",
+    "timeWindow": "Time Window",
+    "window": "{window, select, day {Today} other {This week}}",
+    "caption": "{source} Source Ranking, {window, select, day {today} other {this week}}",
+    "noRanking": "The {source} ranking for {window, select, day {today} other {this week}} appears here after its first collection run.",
+    "opensAtSource": "Each {item} opens at its source in a new tab.",
+    "loading": "Loading the ranking"
+  },
+  "NoRanking": {
+    "title": "No ranking collected yet",
+    "collectNow": "To collect one now, run <command></command>."
+  },
+  "RankingError": {
+    "title": "The ranking could not be read",
+    "description": "The database did not answer. Try again in a moment; the last collected ranking is kept until it does.",
+    "retry": "Try again"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "There is no page at this address.",
+    "back": "Back to the Overview"
+  },
+  "Figures": {
+    "starsGained": {
+      "label": "{window, select, day {Stars today} other {Stars this week}}",
+      "unit": "{count, plural, one {star} other {stars}} {window, select, day {today} other {this week}}"
+    },
+    "stars": {
+      "label": "Stars",
+      "unit": "{count, plural, one {star} other {stars}}"
+    },
+    "forks": {
+      "label": "Forks",
+      "unit": "{count, plural, one {fork} other {forks}}"
+    },
+    "points": {
+      "label": "Points",
+      "unit": "{count, plural, one {point} other {points}}"
+    },
+    "comments": {
+      "label": "Comments",
+      "unit": "{count, plural, one {comment} other {comments}}"
+    }
+  },
+  "Sources": {
+    "github-trending": {
+      "item": "Repository",
+      "description": "{window, select, day {The repos that gained the most stars on GitHub today.} other {The repos that gained the most stars on GitHub this week.}}",
+      "credit": "Rankings come from GitHub Trending; descriptions, stars and forks from the GitHub REST API."
+    },
+    "hacker-news": {
+      "item": "Story",
+      "description": "{window, select, day {The highest-scored stories posted in the last 24 hours.} other {The highest-scored stories posted in the last 7 days.}}",
+      "credit": "Rankings come from Algolia HN Search."
+    }
+  },
+  "Languages": {
+    "en": "English",
+    "vi": "Tiếng Việt"
+  }
+}

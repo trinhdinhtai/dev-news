@@ -1,1 +1,94 @@
-{}
+{
+  "Metadata": {
+    "title": "Dev News",
+    "description": "Những gì developer đang đọc hôm nay, xếp hạng theo từng Source.",
+    "sourceTitle": "{source} {window, select, day {hôm nay} other {tuần này}}, Dev News"
+  },
+  "Layout": {
+    "skipLink": "Chuyển tới bảng xếp hạng"
+  },
+  "Nav": {
+    "home": "Dev News, trang chủ",
+    "overview": "Tổng hợp",
+    "toggleSidebar": "Ẩn hoặc hiện thanh bên",
+    "sidebar": "Thanh bên",
+    "sidebarDescription": "Điều hướng của ứng dụng.",
+    "close": "Đóng",
+    "language": "Ngôn ngữ",
+    "categories": {
+      "code": "Code",
+      "news": "Tin tức",
+      "articles": "Bài viết",
+      "videos": "Video"
+    }
+  },
+  "Overview": {
+    "heading": "Hôm nay trên mọi Source",
+    "intro": "Năm mục đứng đầu bảng xếp hạng ngày của từng Source. Điểm không được so sánh giữa các Source.",
+    "noRanking": "Bảng xếp hạng sẽ hiện ở đây sau lần thu thập đầu tiên của một Source.",
+    "fullRanking": "Xem cả bảng",
+    "caption": "{source}, năm mục đầu hôm nay"
+  },
+  "Ranking": {
+    "updated": "Cập nhật",
+    "rank": "Hạng",
+    "timeWindow": "Khung thời gian",
+    "window": "{window, select, day {Hôm nay} other {Tuần này}}",
+    "caption": "Bảng xếp hạng của {source}, {window, select, day {hôm nay} other {tuần này}}",
+    "noRanking": "Bảng xếp hạng {window, select, day {hôm nay} other {tuần này}} của {source} sẽ hiện ở đây sau lần thu thập đầu tiên.",
+    "opensAtSource": "Mỗi {item} mở ở trang gốc trong một tab mới.",
+    "loading": "Đang tải bảng xếp hạng"
+  },
+  "NoRanking": {
+    "title": "Chưa thu thập bảng xếp hạng nào",
+    "collectNow": "Để thu thập ngay, chạy <command></command>."
+  },
+  "RankingError": {
+    "title": "Không đọc được bảng xếp hạng",
+    "description": "Cơ sở dữ liệu không phản hồi. Hãy thử lại sau ít phút; bảng xếp hạng thu thập gần nhất vẫn được giữ cho tới khi nó phản hồi.",
+    "retry": "Thử lại"
+  },
+  "NotFound": {
+    "title": "Không tìm thấy trang",
+    "description": "Không có trang nào ở địa chỉ này.",
+    "back": "Về trang Tổng hợp"
+  },
+  "Figures": {
+    "starsGained": {
+      "label": "{window, select, day {Sao hôm nay} other {Sao tuần này}}",
+      "unit": "sao {window, select, day {hôm nay} other {tuần này}}"
+    },
+    "stars": {
+      "label": "Sao",
+      "unit": "sao"
+    },
+    "forks": {
+      "label": "Fork",
+      "unit": "fork"
+    },
+    "points": {
+      "label": "Điểm",
+      "unit": "điểm"
+    },
+    "comments": {
+      "label": "Bình luận",
+      "unit": "bình luận"
+    }
+  },
+  "Sources": {
+    "github-trending": {
+      "item": "Repository",
+      "description": "{window, select, day {Các repo được thêm nhiều sao nhất trên GitHub hôm nay.} other {Các repo được thêm nhiều sao nhất trên GitHub tuần này.}}",
+      "credit": "Bảng xếp hạng lấy từ GitHub Trending; mô tả, số sao và fork lấy từ GitHub REST API."
+    },
+    "hacker-news": {
+      "item": "Tin",
+      "description": "{window, select, day {Các tin điểm cao nhất được đăng trong 24 giờ qua.} other {Các tin điểm cao nhất được đăng trong 7 ngày qua.}}",
+      "credit": "Bảng xếp hạng lấy từ Algolia HN Search."
+    }
+  },
+  "Languages": {
+    "en": "English",
+    "vi": "Tiếng Việt"
+  }
+}

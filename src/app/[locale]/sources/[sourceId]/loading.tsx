@@ -1,3 +1,8 @@
+// A client component, so its text comes from the layout's NextIntlClientProvider: a loading
+// file gets no params, and asking the server for the locale would make every Source page dynamic.
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -5,6 +10,7 @@ const ROWS = 12;
 
 /** A skeleton in the shape of the ledger that is coming. */
 export default function Loading() {
+  const t = useTranslations("Ranking");
   return (
     <div
       id="main"
@@ -12,7 +18,7 @@ export default function Loading() {
       aria-busy="true"
     >
       <p className="sr-only" role="status">
-        Loading the ranking
+        {t("loading")}
       </p>
       <div className="flex flex-col gap-3" aria-hidden="true">
         <Skeleton className="h-9 w-48" />

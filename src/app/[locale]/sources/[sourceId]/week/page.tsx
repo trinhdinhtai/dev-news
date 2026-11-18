@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import type { Locale } from "next-intl";
 import { SourcePage, sourcePageMetadata, sourceStaticParams } from "../../source-page";
 
-type Props = { params: Promise<{ locale: string; sourceId: string }> };
+type Props = { params: Promise<{ locale: Locale; sourceId: string }> };
 
 export const generateStaticParams = sourceStaticParams;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return sourcePageMetadata((await params).sourceId, "week");
+  const { locale, sourceId } = await params;
+  return sourcePageMetadata(locale, sourceId, "week");
 }
 
 export default async function WeekPage({ params }: Props) {

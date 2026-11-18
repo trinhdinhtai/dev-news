@@ -1,5 +1,6 @@
 import { ArrowRightIcon } from "lucide-react";
-import { setRequestLocale } from "next-intl/server";
+import type { Locale } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
@@ -7,14 +8,15 @@ import { cachedOverview } from "@/lib/domain";
 import { LocalTime } from "./local-time";
 import { NoRanking } from "./sources/no-ranking";
 import { RankingLedger } from "./sources/ranking-ledger";
-import { sourceDisplay } from "./sources/source-names";
+import { findSourceDisplay } from "./sources/source-names";
 
-// Built once and served static; ingesting a Source revalidates its tag (see /api/revalidate).
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: Locale }> };
 
+// Built once per language and served static; ingesting a Source revalidates its tag (see /api/revalidate).
 export default async function Overview({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations();
   // Regional Sources show only in their own interface language.
   const overview = await cachedOverview(locale);
 
@@ -22,25 +24,21 @@ export default async function Overview({ params }: Props) {
     <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-          Today on every Source
+          {t("Overview.heading")}
         </h1>
-        <p className="max-w-prose text-muted-foreground">
-          The top five of each Source&rsquo;s own daily ranking. Scores are not compared across Sources.
-        </p>
+        <p className="max-w-prose text-muted-foreground">{t("Overview.intro")}</p>
       </div>
 
       {overview.length === 0 ? (
-        <NoRanking command="pnpm ingest hacker-news">
-          Rankings appear here after a Source&rsquo;s first collection run.
-        </NoRanking>
+        <NoRanking command="pnpm ingest hacker-news">{t("Overview.noRanking")}</NoRanking>
       ) : (
         overview.map((block) => {
-          const display = sourceDisplay[block.sourceId];
+          const display = findSourceDisplay(block.sourceId);
           if (!display) return null;
-          const headId = `${block.sourceId}-head`;
-          const href = `/sources/${block.sourceId}`;
+          const headId = `${display.id}-head`;
+          const href = `/sources/${display.id}`;
           return (
-            <section key={block.sourceId} aria-labelledby={headId}>
+            <section key={display.id} aria-labelledby={headId}>
               <Card className="pb-0">
                 <CardHeader className="px-4 sm:px-6">
                   <CardTitle className="text-lg">
@@ -53,15 +51,15 @@ export default async function Overview({ params }: Props) {
                   <CardDescription>
                     {block.lastSucceededAt ? (
                       <>
-                        Updated <LocalTime iso={block.lastSucceededAt} />
+                        {t("Ranking.updated")} <LocalTime iso={block.lastSucceededAt} />
                       </>
                     ) : (
-                      display.rankings.day.description
+                      t(`Sources.${display.id}.description`, { window: "day" })
                     )}
                   </CardDescription>
                   <CardAction>
                     <Button variant="outline" size="sm" nativeButton={false} render={<Link href={href} />}>
-                      Full ranking
+                      {t("Overview.fullRanking")}
                       <ArrowRightIcon data-icon="inline-end" />
                     </Button>
                   </CardAction>
@@ -70,7 +68,9 @@ export default async function Overview({ params }: Props) {
                   <RankingLedger
                     display={display}
                     timeWindow="day"
-                    items={block.items} caption={`${display.name}, top five today`} />
+                    items={block.items}
+                    caption={t("Overview.caption", { source: display.name })}
+                  />
                 </CardContent>
               </Card>
             </section>

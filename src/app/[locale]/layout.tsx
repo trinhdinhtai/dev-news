@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Mono, Host_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,11 +21,6 @@ const atkinsonMono = Atkinson_Hyperlegible_Mono({
   adjustFontFallback: false,
 });
 
-export const metadata: Metadata = {
-  title: "Dev News",
-  description: "What developers are reading today, ranked by each Source.",
-};
-
 /** Every page is built once per interface language. */
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -33,10 +28,18 @@ export function generateStaticParams() {
 
 type Props = { children: ReactNode; params: Promise<{ locale: string }> };
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) return {};
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  return { title: t("title"), description: t("description") };
+}
+
 export default async function RootLayout({ children, params }: Props) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
+  const t = await getTranslations("Layout");
 
   return (
     <html lang={locale} className={cn("dark", hostGrotesk.variable, atkinsonMono.variable)}>
@@ -45,7 +48,7 @@ export default async function RootLayout({ children, params }: Props) {
           href="#main"
           className="sr-only rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-4 focus:z-50"
         >
-          Skip to the ranking
+          {t("skipLink")}
         </a>
         <NextIntlClientProvider>
           <TooltipProvider>

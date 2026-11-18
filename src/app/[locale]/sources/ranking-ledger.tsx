@@ -1,13 +1,12 @@
+import { useFormatter, useTranslations } from "next-intl";
 import type { RankedItem, TimeWindow } from "@/domain";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { SourceDisplay } from "./source-names";
+import type { Figure, SourceDisplay } from "./source-names";
 
 /** What the ledger reads off an Item; dates are left out so cached, serialized Items fit too. */
 export type LedgerItem = Pick<RankedItem, "rank" | "title" | "url" | "description" | "programmingLanguage" | "metrics">;
-
-const figures = new Intl.NumberFormat("en-US");
 
 function hostOf(url: string) {
   try {
@@ -29,23 +28,29 @@ export function RankingLedger({
   items: LedgerItem[];
   caption: string;
 }) {
-  const { figures: columns } = display.rankings[timeWindow];
+  const t = useTranslations();
+  const format = useFormatter();
+  const columns = display.figures;
+  const value = (item: LedgerItem, figure: Figure) => item.metrics[figure] ?? 0;
+  const unit = (item: LedgerItem, figure: Figure) =>
+    t(`Figures.${figure}.unit`, { count: value(item, figure), window: timeWindow });
+
   return (
     <Table>
       <TableCaption className="sr-only">{caption}</TableCaption>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="w-12 pl-4 text-muted-foreground sm:pl-6">Rank</TableHead>
-          <TableHead className="text-muted-foreground">{display.itemLabel}</TableHead>
+          <TableHead className="w-12 pl-4 text-muted-foreground sm:pl-6">{t("Ranking.rank")}</TableHead>
+          <TableHead className="text-muted-foreground">{t(`Sources.${display.id}.item`)}</TableHead>
           {columns.map((figure, i) => (
             <TableHead
-              key={figure.metric}
+              key={figure}
               className={cn(
                 "hidden text-right text-muted-foreground sm:table-cell",
                 i === columns.length - 1 && "pr-4 sm:pr-6",
               )}
             >
-              {figure.label}
+              {t(`Figures.${figure}.label`, { window: timeWindow })}
             </TableHead>
           ))}
         </TableRow>
@@ -74,8 +79,8 @@ export function RankingLedger({
                     {origin && <Badge variant="secondary">{origin}</Badge>}
                     {/* On a phone the figure columns fold into this line, each with its unit. */}
                     {columns.map((figure) => (
-                      <span key={figure.metric} className="font-mono tabular-nums sm:hidden">
-                        {figures.format(item.metrics[figure.metric] ?? 0)} {figure.unit}
+                      <span key={figure} className="font-mono tabular-nums sm:hidden">
+                        {format.number(value(item, figure))} {unit(item, figure)}
                       </span>
                     ))}
                   </div>
@@ -83,14 +88,14 @@ export function RankingLedger({
               </TableCell>
               {columns.map((figure, i) => (
                 <TableCell
-                  key={figure.metric}
+                  key={figure}
                   className={cn(
                     "hidden py-3.5 text-right align-top font-mono tabular-nums sm:table-cell",
                     i === columns.length - 1 && "pr-4 sm:pr-6",
                   )}
                 >
-                  {figures.format(item.metrics[figure.metric] ?? 0)}
-                  <span className="sr-only"> {figure.unit}</span>
+                  {format.number(value(item, figure))}
+                  <span className="sr-only"> {unit(item, figure)}</span>
                 </TableCell>
               ))}
             </TableRow>

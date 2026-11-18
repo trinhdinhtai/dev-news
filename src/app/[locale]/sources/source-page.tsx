@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import type { Locale } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { sourceIds, type TimeWindow } from "@/domain";
@@ -10,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { LocalTime } from "../local-time";
 import { NoRanking } from "./no-ranking";
 import { RankingLedger } from "./ranking-ledger";
-import { sourceDisplay, sourceHref, timeWindowTitle, timeWindows } from "./source-names";
+import { findSourceDisplay, sourceHref, timeWindows } from "./source-names";
 
 /**
  * The Sources each Time Window's route builds a static page for; the route's folder names
@@ -20,32 +21,34 @@ export function sourceStaticParams() {
   return sourceIds.map((sourceId) => ({ sourceId }));
 }
 
-export function sourcePageMetadata(sourceId: string, timeWindow: TimeWindow): Metadata {
-  const display = sourceDisplay[sourceId];
+export async function sourcePageMetadata(locale: Locale, sourceId: string, timeWindow: TimeWindow): Promise<Metadata> {
+  const display = findSourceDisplay(sourceId);
   if (!display) return {};
+  const t = await getTranslations({ locale });
   return {
-    title: `${display.name} ${timeWindowTitle(timeWindow)}, Dev News`,
-    description: display.rankings[timeWindow].description,
+    title: t("Metadata.sourceTitle", { source: display.name, window: timeWindow }),
+    description: t(`Sources.${display.id}.description`, { window: timeWindow }),
   };
 }
 
 /** Links to the same Source's other Time Windows; the current one is marked as the page. */
-function TimeWindowSwitch({ sourceId, current }: { sourceId: string; current: TimeWindow }) {
+async function TimeWindowSwitch({ sourceId, current }: { sourceId: string; current: TimeWindow }) {
+  const t = await getTranslations("Ranking");
   return (
-    <nav aria-label="Time Window" className="inline-flex w-fit rounded-lg border bg-muted p-0.5">
+    <nav aria-label={t("timeWindow")} className="inline-flex w-fit rounded-lg border bg-muted p-0.5">
       {timeWindows.map((option) => {
-        const active = option.id === current;
+        const active = option === current;
         return (
           <Link
-            key={option.id}
-            href={sourceHref(sourceId, option.id)}
+            key={option}
+            href={sourceHref(sourceId, option)}
             aria-current={active ? "page" : undefined}
             className={cn(
               "rounded-md px-3 py-1 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {option.label}
+            {t("window", { window: option })}
           </Link>
         );
       })}
@@ -59,17 +62,16 @@ export async function SourcePage({
   sourceId,
   timeWindow,
 }: {
-  locale: string;
+  locale: Locale;
   sourceId: string;
   timeWindow: TimeWindow;
 }) {
   setRequestLocale(locale);
-  const display = sourceDisplay[sourceId];
+  const display = findSourceDisplay(sourceId);
   if (!display || !sourceIds.includes(sourceId)) notFound();
 
+  const t = await getTranslations();
   const ranking = await cachedRanking(sourceId, timeWindow);
-  const { description } = display.rankings[timeWindow];
-  const windowTitle = timeWindowTitle(timeWindow);
 
   return (
     <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -79,11 +81,13 @@ export async function SourcePage({
             <h1 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl">
               {display.name}
             </h1>
-            <p className="max-w-prose text-muted-foreground">{description}</p>
+            <p className="max-w-prose text-muted-foreground">
+              {t(`Sources.${display.id}.description`, { window: timeWindow })}
+            </p>
           </div>
           {ranking.lastSucceededAt && (
             <Badge variant="outline">
-              Updated <LocalTime iso={ranking.lastSucceededAt} />
+              {t("Ranking.updated")} <LocalTime iso={ranking.lastSucceededAt} />
             </Badge>
           )}
         </div>
@@ -92,7 +96,7 @@ export async function SourcePage({
 
       {ranking.items.length === 0 ? (
         <NoRanking command={`pnpm ingest ${sourceId}`}>
-          The {display.name} ranking for {windowTitle} appears here after its first collection run.
+          {t("Ranking.noRanking", { source: display.name, window: timeWindow })}
         </NoRanking>
       ) : (
         <Card className="py-0">
@@ -100,14 +104,15 @@ export async function SourcePage({
             display={display}
             timeWindow={timeWindow}
             items={ranking.items}
-            caption={`${display.name} Source Ranking, ${windowTitle}`}
+            caption={t("Ranking.caption", { source: display.name, window: timeWindow })}
           />
         </Card>
       )}
 
       <footer className="text-sm text-muted-foreground">
         <p>
-          {display.credit} Each {display.itemLabel.toLowerCase()} opens at its source in a new tab.
+          {t(`Sources.${display.id}.credit`)}{" "}
+          {t("Ranking.opensAtSource", { item: t(`Sources.${display.id}.item`).toLowerCase() })}
         </p>
       </footer>
     </div>
