@@ -7,7 +7,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 /** Shown when the ranking cannot be read, for instance when the database is unreachable. */
 export default function RankingError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+    <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <Empty className="border" role="alert">
         <EmptyHeader>
           <EmptyMedia variant="icon">
@@ -27,6 +27,6 @@ export default function RankingError({ reset }: { error: Error; reset: () => voi
           </Button>
         </EmptyContent>
       </Empty>
-    </main>
+    </div>
   );
 }
