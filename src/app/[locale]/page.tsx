@@ -1,7 +1,8 @@
 import { ArrowRightIcon } from "lucide-react";
-import Link from "next/link";
+import { setRequestLocale } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@/i18n/navigation";
 import { cachedOverview } from "@/lib/domain";
 import { LocalTime } from "./local-time";
 import { NoRanking } from "./sources/no-ranking";
@@ -9,8 +10,13 @@ import { RankingLedger } from "./sources/ranking-ledger";
 import { sourceDisplay } from "./sources/source-names";
 
 // Built once and served static; ingesting a Source revalidates its tag (see /api/revalidate).
-export default async function Overview() {
-  const overview = await cachedOverview("en");
+type Props = { params: Promise<{ locale: string }> };
+
+export default async function Overview({ params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  // Regional Sources show only in their own interface language.
+  const overview = await cachedOverview(locale);
 
   return (
     <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
