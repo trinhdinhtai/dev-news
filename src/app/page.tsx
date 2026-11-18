@@ -50,7 +50,7 @@ export default async function Overview() {
                         Updated <LocalTime iso={block.lastSucceededAt} />
                       </>
                     ) : (
-                      display.dayRanking
+                      display.rankings.day.description
                     )}
                   </CardDescription>
                   <CardAction>
@@ -61,7 +61,10 @@ export default async function Overview() {
                   </CardAction>
                 </CardHeader>
                 <CardContent className="border-t px-0">
-                  <RankingLedger display={display} items={block.items} caption={`${display.name}, top five today`} />
+                  <RankingLedger
+                    display={display}
+                    timeWindow="day"
+                    items={block.items} caption={`${display.name}, top five today`} />
                 </CardContent>
               </Card>
             </section>
