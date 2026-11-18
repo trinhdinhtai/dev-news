@@ -3,8 +3,12 @@ import { useTranslations } from "next-intl";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Link } from "@/i18n/navigation";
+import { LanguageSwitch } from "./language-switch";
 
-/** The bar above each page: the sidebar toggle, and on a phone, where the sidebar is hidden, the wordmark. */
+/**
+ * The bar above each page: the sidebar toggle, on a phone, where the sidebar is hidden,
+ * the wordmark, and the language switch.
+ */
 export function SiteHeader() {
   const t = useTranslations("Nav");
   return (
@@ -21,6 +25,9 @@ export function SiteHeader() {
         </span>
         Dev News
       </Link>
+      <div className="ml-auto">
+        <LanguageSwitch />
+      </div>
     </header>
   );
 }
