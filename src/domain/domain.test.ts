@@ -30,4 +30,36 @@ describe("Hacker News daily Source Ranking", () => {
     });
     expect(ranking.items[29]).toMatchObject({ rank: 30, metrics: { points: 140, comments: 74 } });
   });
+
+  it("keeps one Source Ranking when the same data is ingested twice", async () => {
+    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+
+    await core.ingest("hacker-news", NOW);
+    const first = await core.getSourceRanking({ sourceId: "hacker-news", timeWindow: "day" });
+    await core.ingest("hacker-news", new Date(NOW.getTime() + 30 * 60 * 1000));
+    const second = await core.getSourceRanking({ sourceId: "hacker-news", timeWindow: "day" });
+
+    expect(second.items).toHaveLength(30);
+    expect(second.items.map((item) => item.rank)).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
+    expect(second.items).toEqual(first.items);
+  });
+
+  it("asks for the stories created in the 24 hours before the given moment", async () => {
+    const http = fakeHttp({ "hn.algolia.com": hnDayResponse });
+    const core = createDomainCore({ db: testDb, http });
+
+    await core.ingest("hacker-news", NOW);
+
+    expect(http.requests).toHaveLength(1);
+    expect(http.requests[0].searchParams.get("numericFilters")).toBe("created_at_i>1794899304");
+  });
+
+  it("records when the Source last succeeded", async () => {
+    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+
+    await core.ingest("hacker-news", NOW);
+    const ranking = await core.getSourceRanking({ sourceId: "hacker-news", timeWindow: "day" });
+
+    expect(ranking.lastSucceededAt).toEqual(NOW);
+  });
 });
