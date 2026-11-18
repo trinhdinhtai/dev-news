@@ -1,15 +1,16 @@
 import { createDomainCore, type DomainCore } from "@/domain";
-import { createDb } from "@/domain/db/client";
+import { createDb, type Db } from "@/domain/db/client";
 
-// One domain core per server process; dev hot reloads reuse it so connections do not pile up.
-const globalForDomain = globalThis as unknown as { domainCore?: DomainCore };
+// One database client per server process, so dev hot reloads do not pile up connections.
+// Only the client is kept: a core kept across reloads would keep serving old code.
+const globalForDomain = globalThis as unknown as { db?: Db };
 
 /** The domain core the web app reads through. The web never calls a Source itself. */
 export function domain(): DomainCore {
-  if (!globalForDomain.domainCore) {
+  if (!globalForDomain.db) {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set; copy .env.example to .env");
-    globalForDomain.domainCore = createDomainCore({ db: createDb(url), http: fetch });
+    globalForDomain.db = createDb(url);
   }
-  return globalForDomain.domainCore;
+  return createDomainCore({ db: globalForDomain.db, http: fetch });
 }
