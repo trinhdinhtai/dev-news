@@ -7,11 +7,16 @@ export interface Figure {
   unit: string;
 }
 
-/** How each Source is named on screen, what its daily Source Ranking holds, and which figures it shows. */
-export const sourceDisplay: Record<
-  string,
-  { name: string; dayRanking: string; credit: string; itemLabel: string; figures: Figure[] }
-> = {
+/** How a Source is named on screen, what its daily Source Ranking holds, and which figures it shows. */
+export interface SourceDisplay {
+  name: string;
+  dayRanking: string;
+  credit: string;
+  itemLabel: string;
+  figures: Figure[];
+}
+
+export const sourceDisplay: Record<string, SourceDisplay> = {
   "github-trending": {
     name: "GitHub Trending",
     dayRanking: "The repos that gained the most stars on GitHub today.",
