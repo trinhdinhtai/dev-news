@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Http } from "../../http";
-import { fetchJson } from "../fetch-json";
+import { fetchJson } from "../fetch-source";
 import type { FetchedItem, SourceAdapter } from "../types";
 
 const RANKING_SIZE = 30;
