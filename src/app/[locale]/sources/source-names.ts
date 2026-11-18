@@ -56,8 +56,3 @@ export function findSourceDisplay(sourceId: string): SourceDisplay | undefined {
 
 /** Every Time Window in the order the switch shows them; the first is the default. */
 export const timeWindows: readonly TimeWindow[] = ["day", "week"];
-
-/** The Source page for a Time Window. The day is the default, so it keeps the bare path. */
-export function sourceHref(sourceId: string, timeWindow: TimeWindow) {
-  return timeWindow === "day" ? `/sources/${sourceId}` : `/sources/${sourceId}/${timeWindow}`;
-}

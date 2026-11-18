@@ -19,7 +19,7 @@ pnpm ingest hacker-news       # or collect the named Sources now
 pnpm dev                      # http://localhost:3000
 ```
 
-The web app only reads the database. A Source's page stays empty until `pnpm ingest` has run for it. GitHub Trending needs `GITHUB_TOKEN` in `.env` to run more than once or twice an hour.
+The web app only reads the database. A Source's page stays empty until `pnpm ingest` has run for it. GitHub Trending needs `GITHUB_TOKEN` in `.env`: an ingest looks up a few hundred repos on the REST API, far past the 60 calls an hour allowed without a token.
 
 ## Languages
 
@@ -27,7 +27,9 @@ The interface is in English (the default, at the bare paths) and Vietnamese (und
 
 ## Collection
 
-Each Source in the Source config (`src/domain/sources/`) sets `intervalMinutes`: Hacker News every 30 minutes, GitHub Trending hourly. `pnpm ingest` with no arguments ingests the Sources whose interval has passed since they were last tried, one after another, so a failing Source is retried at its own pace. A Source that fails keeps its last good Source Ranking and success time; its error and the moment are stored on the Source, the other Sources are still ingested, and the run exits 1. Every answer a Source gives is kept in `raw_responses` for seven days; at these intervals that is about 60 to 70 MB once Postgres compresses it, mostly GitHub Trending's pages. Requests to Sources carry the User-Agent `dev-news/0.1 (+https://github.com/trinhdinhtai/dev-news)`.
+GitHub Trending is collected for every language and for Python, TypeScript, JavaScript, Go, Rust, Java, C++ and C# (`trendingLanguages` in its adapter), each in both Time Windows: 18 pages an ingest, each its own Source Ranking under the language's filter. Its page picks the language in the URL, as in `/sources/github-trending/python/week`.
+
+Each Source in the Source config (`src/domain/sources/`) sets `intervalMinutes`: Hacker News every 30 minutes, GitHub Trending hourly. `pnpm ingest` with no arguments ingests the Sources whose interval has passed since they were last tried, one after another, so a failing Source is retried at its own pace. A Source that fails keeps its last good Source Ranking and success time; its error and the moment are stored on the Source, the other Sources are still ingested, and the run exits 1. Every answer a Source gives is kept in `raw_responses`: a successful ingest's answers until the next successful ingest of that Source, a failed ingest's for seven days so the failure can be diagnosed. That keeps the table to one ingest's pages per Source plus any recent failures. Requests to Sources carry the User-Agent `dev-news/0.1 (+https://github.com/trinhdinhtai/dev-news)`.
 
 The Overview and each Source's page are built as static pages, cached under one `source:<id>` tag per Source, and show when each Source was last updated. After a run, `pnpm ingest` calls `POST /api/revalidate` on `REVALIDATE_URL` with `REVALIDATE_SECRET` for the Sources it ingested, which marks their cached data stale. The next visit gets the old page while the new one is built, and the visit after that gets the new data. Without those two variables the cached pages stay as they are.
 

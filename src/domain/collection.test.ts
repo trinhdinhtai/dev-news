@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import repos from "./sources/github-trending/__fixtures__/repos.json";
 import hnDayResponse from "./sources/hacker-news/__fixtures__/search-day.json";
 import { createDomainCore, type Http } from "./index";
-import { fakeHttp, resetTestDb, testDb } from "./testing";
+import { fakeHttp, resetTestDb, testDb, unfilteredSources } from "./testing";
 
 const HN_AT = new Date(1794985704 * 1000);
 const MINUTE = 60 * 1000;
@@ -24,11 +24,11 @@ describe("A failed ingest", () => {
   beforeEach(resetTestDb);
 
   it("keeps the last good Source Ranking and success time when the answer is malformed, and records the error", async () => {
-    await createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) }).ingest(
+    await createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) }).ingest(
       "hacker-news",
       HN_AT,
     );
-    const broken = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
+    const broken = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
 
     await expect(broken.ingest("hacker-news", LATER)).rejects.toThrow();
     const ranking = await broken.getSourceRanking({ sourceId: "hacker-news", timeWindow: "day" });
@@ -43,6 +43,7 @@ describe("A failed ingest", () => {
   it("records a network error for a Source that never succeeded", async () => {
     const offline = createDomainCore({
       db: testDb,
+      adapters: unfilteredSources,
       http: async () => {
         throw new TypeError("fetch failed");
       },
@@ -62,7 +63,7 @@ describe("Raw Source responses", () => {
   beforeEach(resetTestDb);
 
   it("keeps what the Source answered, with the Source and the moment", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
 
     await core.ingest("hacker-news", HN_AT);
     const responses = await core.getRawResponses("hacker-news");
@@ -75,7 +76,7 @@ describe("Raw Source responses", () => {
   });
 
   it("keeps a malformed answer too, so the failure can be diagnosed", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
 
     await expect(core.ingest("hacker-news", HN_AT)).rejects.toThrow();
     const responses = await core.getRawResponses("hacker-news");
@@ -83,21 +84,37 @@ describe("Raw Source responses", () => {
     expect(responses.map((response) => JSON.parse(response.body))).toEqual([{ hits: "nope" }]);
   });
 
-  it("drops the responses of ingests more than a week old", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
-    const day = 24 * 60 * 60 * 1000;
+  it("keeps only the latest successful ingest's responses", async () => {
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+    const later = new Date(HN_AT.getTime() + 30 * 60 * 1000);
 
     await core.ingest("hacker-news", HN_AT);
-    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 6 * day));
-    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 8 * day));
+    await core.ingest("hacker-news", later);
     const responses = await core.getRawResponses("hacker-news");
 
-    // Each ingest keeps its day and its week answer.
-    expect(responses.map((response) => response.fetchedAt)).toEqual([
-      new Date(HN_AT.getTime() + 8 * day),
-      new Date(HN_AT.getTime() + 8 * day),
-      new Date(HN_AT.getTime() + 6 * day),
-      new Date(HN_AT.getTime() + 6 * day),
+    // The day and the week answer of the later ingest.
+    expect(responses.map((response) => [response.fetchedAt, response.failed])).toEqual([
+      [later, false],
+      [later, false],
+    ]);
+  });
+
+  it("keeps a failed ingest's responses for a week, beside the latest successful ones", async () => {
+    const good = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+    const broken = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
+    const at = (days: number) => new Date(HN_AT.getTime() + days * 24 * 60 * 60 * 1000);
+
+    await expect(broken.ingest("hacker-news", at(0))).rejects.toThrow();
+    await good.ingest("hacker-news", at(1));
+    await expect(broken.ingest("hacker-news", at(6))).rejects.toThrow();
+    await good.ingest("hacker-news", at(8));
+    const responses = await good.getRawResponses("hacker-news");
+
+    // The failure on day 0 is more than a week old and the success on day 1 is no longer the latest.
+    expect(responses.map((response) => [response.fetchedAt, response.failed])).toEqual([
+      [at(8), false],
+      [at(8), false],
+      [at(6), true],
     ]);
   });
 });
@@ -107,7 +124,7 @@ describe("A collection run", () => {
 
   it("still updates the other Sources when one fails, and reports which failed", async () => {
     const githubDown = Object.entries(everySource).filter(([key]) => key !== "github.com/trending?since=daily");
-    const core = createDomainCore({ db: testDb, http: fakeHttp(Object.fromEntries(githubDown)) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(Object.fromEntries(githubDown)) });
 
     const results = await core.collect(HN_AT);
     const statuses = await core.getSourceStatuses();
@@ -124,7 +141,7 @@ describe("A collection run", () => {
   });
 
   it("keeps a failing Source's last good ranking and success time while another Source in the run updates", async () => {
-    await createDomainCore({ db: testDb, http: fakeHttp(everySource) }).collect(HN_AT);
+    await createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) }).collect(HN_AT);
     const recorded = fakeHttp(everySource);
     const failures: Record<string, Http> = {
       "a malformed answer": fakeHttp({ ...everySource, "hn.algolia.com": { hits: "nope" } }),
@@ -135,7 +152,7 @@ describe("A collection run", () => {
 
     for (const [failure, http] of Object.entries(failures)) {
       at = new Date(at.getTime() + 60 * MINUTE);
-      const core = createDomainCore({ db: testDb, http });
+      const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http });
 
       const results = await core.collect(at);
       const [github, hn] = await core.getSourceStatuses();
@@ -157,7 +174,7 @@ describe("A collection run", () => {
 
   it("retries a failing Source at its own interval, not on every run", async () => {
     const http = fakeHttp({ ...everySource, "hn.algolia.com": { hits: "nope" } });
-    const core = createDomainCore({ db: testDb, http });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http });
     const ran = async (minutes: number) =>
       (await core.collect(new Date(HN_AT.getTime() + minutes * MINUTE))).map((result) => result.sourceId);
 
@@ -167,7 +184,7 @@ describe("A collection run", () => {
   });
 
   it("ingests a Source only once its own interval has passed: Hacker News every 30 minutes, GitHub Trending hourly", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) });
     const at = (minutes: number) => new Date(HN_AT.getTime() + minutes * MINUTE);
     const ran = async (minutes: number) => (await core.collect(at(minutes))).map((result) => result.sourceId);
 
@@ -179,7 +196,7 @@ describe("A collection run", () => {
   });
 
   it("ingests the named Sources whether or not they are due", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) });
 
     await core.collect(HN_AT);
     const results = await core.collect(new Date(HN_AT.getTime() + MINUTE), { sourceIds: ["github-trending"] });
@@ -194,7 +211,7 @@ describe("Requests to Sources", () => {
   it("name the app and where to reach it in the User-Agent, on every request to every Source", async () => {
     const http = fakeHttp(everySource);
 
-    await createDomainCore({ db: testDb, http }).collect(HN_AT);
+    await createDomainCore({ db: testDb, adapters: unfilteredSources, http }).collect(HN_AT);
 
     expect(new Set(http.requests.map((url) => url.host))).toEqual(
       new Set(["github.com", "api.github.com", "hn.algolia.com"]),

@@ -1,0 +1,1 @@
+ALTER TABLE "raw_responses" ADD COLUMN "failed" boolean DEFAULT false NOT NULL;

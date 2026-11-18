@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import repos from "./sources/github-trending/__fixtures__/repos.json";
 import { createDomainCore } from "./index";
-import { fakeHttp, resetTestDb, testDb } from "./testing";
+import { createGithubTrending, githubTrending } from "./sources/github-trending/adapter";
+import { fakeHttp, resetTestDb, testDb, unfilteredSources } from "./testing";
 
 const fixture = (name: string) =>
   readFileSync(new URL(`./sources/github-trending/__fixtures__/${name}`, import.meta.url), "utf8");
@@ -27,7 +28,7 @@ describe("GitHub Trending Source Ranking", () => {
   beforeEach(resetTestDb);
 
   it("ranks the daily trending repos by stars gained today, with the details from REST", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(githubResponses()) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(githubResponses()) });
 
     await core.ingest("github-trending", NOW);
     const ranking = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day" });
@@ -67,7 +68,7 @@ describe("GitHub Trending Source Ranking", () => {
   });
 
   it("ranks the weekly trending repos by stars gained this week", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(githubResponses()) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(githubResponses()) });
 
     await core.ingest("github-trending", NOW);
     const ranking = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "week" });
@@ -104,7 +105,7 @@ describe("GitHub Trending Source Ranking", () => {
 
   it("looks up each repo on the REST API once, even when it trends in both Time Windows", async () => {
     const http = fakeHttp(githubResponses());
-    const core = createDomainCore({ db: testDb, http });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http });
 
     await core.ingest("github-trending", NOW);
 
@@ -115,12 +116,12 @@ describe("GitHub Trending Source Ranking", () => {
   });
 
   it("treats a trending page whose layout changed as a Source error and keeps the old Source Ranking", async () => {
-    await createDomainCore({ db: testDb, http: fakeHttp(githubResponses()) }).ingest("github-trending", NOW);
+    await createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(githubResponses()) }).ingest("github-trending", NOW);
 
     const changed = fakeHttp(
       githubResponses({ "github.com/trending?since=weekly": weekHtml.replaceAll("Box-row", "TrendingRow") }),
     );
-    const core = createDomainCore({ db: testDb, http: changed });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: changed });
     await expect(core.ingest("github-trending", new Date(NOW.getTime() + 60 * 60 * 1000))).rejects.toThrow(
       /layout may have changed/,
     );
@@ -135,6 +136,7 @@ describe("GitHub Trending Source Ranking", () => {
   it("treats a repo row without its stars gained as a Source error", async () => {
     const core = createDomainCore({
       db: testDb,
+      adapters: unfilteredSources,
       http: fakeHttp(githubResponses({ "github.com/trending?since=daily": dayHtml.replace("1,005 stars today", "") })),
     });
 
@@ -146,7 +148,7 @@ describe("GitHub Trending Source Ranking", () => {
 
   it("calls the REST API with the GitHub token, and never sends it to the trending page", async () => {
     const http = fakeHttp(githubResponses());
-    const core = createDomainCore({ db: testDb, http, secrets: { githubToken: "test-token" } });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http, secrets: { githubToken: "test-token" } });
 
     await core.ingest("github-trending", NOW);
 
@@ -157,7 +159,7 @@ describe("GitHub Trending Source Ranking", () => {
   });
 
   it("stops at the REST rate limit, keeps the old Source Ranking and says when the limit resets", async () => {
-    await createDomainCore({ db: testDb, http: fakeHttp(githubResponses()) }).ingest("github-trending", NOW);
+    await createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(githubResponses()) }).ingest("github-trending", NOW);
 
     const rateLimited = () =>
       new Response(JSON.stringify({ message: "API rate limit exceeded" }), {
@@ -169,7 +171,7 @@ describe("GitHub Trending Source Ranking", () => {
       "github.com/trending?since=weekly": weekHtml,
       "api.github.com": rateLimited,
     });
-    const core = createDomainCore({ db: testDb, http: limited });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: limited });
 
     await expect(core.ingest("github-trending", new Date(NOW.getTime() + 60 * 60 * 1000))).rejects.toThrow(
       "api.github.com rate limit reached; it resets at 2026-11-18T11:06:40.000Z",
@@ -178,5 +180,111 @@ describe("GitHub Trending Source Ranking", () => {
     const ranking = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day" });
     expect(ranking.lastSucceededAt).toEqual(NOW);
     expect(ranking.items).toHaveLength(15);
+  });
+});
+
+describe("GitHub Trending per programming language", () => {
+  beforeEach(resetTestDb);
+
+  /** The unfiltered pages plus recorded Python and Rust pages for both Time Windows. */
+  function languageHttp() {
+    return fakeHttp(
+      githubResponses({
+        "github.com/trending/python?since=daily": fixture("trending-python-day.html"),
+        "github.com/trending/python?since=weekly": fixture("trending-python-week.html"),
+        "github.com/trending/rust?since=daily": fixture("trending-rust-day.html"),
+        "github.com/trending/rust?since=weekly": fixture("trending-rust-week.html"),
+      }),
+    );
+  }
+
+  const twoLanguages = createGithubTrending({
+    languages: [
+      { id: "python", label: "Python", path: "python" },
+      { id: "rust", label: "Rust", path: "rust" },
+    ],
+  });
+
+  it("gives each language its own Source Ranking, ranked by stars gained", async () => {
+    const core = createDomainCore({ db: testDb, http: languageHttp(), adapters: [twoLanguages] });
+
+    await core.ingest("github-trending", NOW);
+    const python = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day", filter: "python" });
+    const rust = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day", filter: "rust" });
+
+    expect(python.items).toHaveLength(19);
+    expect(python.items.slice(0, 3).map((item) => [item.rank, item.title, item.metrics.starsGained])).toEqual([
+      [1, "elementalsouls/Claude-BugHunter", 2322],
+      [2, "google-research/paper-orchestra", 1529],
+      [3, "kajisho5/ffmpeg-skill", 1292],
+    ]);
+    expect(python.items[18]).toMatchObject({ rank: 19, title: "vllm-project/vllm-ascend" });
+    expect(rust.items).toHaveLength(17);
+    expect(rust.items.slice(0, 3).map((item) => [item.rank, item.title, item.metrics.starsGained])).toEqual([
+      [1, "antithesishq/bombadil", 380],
+      [2, "rust-lang/rust", 305],
+      [3, "tauri-apps/tauri", 265],
+    ]);
+    expect(rust.items[1]).toMatchObject({ programmingLanguage: "Rust", url: "https://github.com/rust-lang/rust" });
+  });
+
+  it("keeps each language's week, and the unfiltered ranking, apart", async () => {
+    const core = createDomainCore({ db: testDb, http: languageHttp(), adapters: [twoLanguages] });
+
+    await core.ingest("github-trending", NOW);
+    const rustWeek = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "week", filter: "rust" });
+    const everyLanguage = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "day" });
+
+    expect(rustWeek.items).toHaveLength(9);
+    expect(rustWeek.items.slice(0, 2).map((item) => [item.title, item.metrics.starsGained])).toEqual([
+      ["vercel-labs/agent-browser", 3429],
+      ["martin-olivier/airgorah", 1468],
+    ]);
+    expect(everyLanguage.items).toHaveLength(15);
+    expect(everyLanguage.items[0]).toMatchObject({ rank: 1, title: "obra/superpowers" });
+  });
+
+  it("asks for the trending page of every language in both Time Windows", async () => {
+    const http = languageHttp();
+    const core = createDomainCore({ db: testDb, http, adapters: [twoLanguages] });
+
+    await core.ingest("github-trending", NOW);
+
+    const pages = http.requests.filter((url) => url.host === "github.com").map((url) => url.pathname + url.search);
+    expect(pages.toSorted()).toEqual([
+      "/trending/python?since=daily",
+      "/trending/python?since=weekly",
+      "/trending/rust?since=daily",
+      "/trending/rust?since=weekly",
+      "/trending?since=daily",
+      "/trending?since=weekly",
+    ]);
+  });
+});
+
+describe("The configured GitHub Trending languages", () => {
+  beforeEach(resetTestDb);
+
+  it("asks GitHub for each language by its own path, C++ and C# included", async () => {
+    // Every page answers with the recorded daily page; only the requested paths matter here.
+    const http = fakeHttp({ ...githubResponses(), "github.com": () => new Response(dayHtml) });
+    const core = createDomainCore({ db: testDb, http, adapters: [githubTrending] });
+
+    await core.ingest("github-trending", NOW);
+
+    const paths = new Set(http.requests.filter((url) => url.host === "github.com").map((url) => url.pathname));
+    expect([...paths].toSorted()).toEqual([
+      "/trending",
+      "/trending/c%23",
+      "/trending/c++",
+      "/trending/go",
+      "/trending/java",
+      "/trending/javascript",
+      "/trending/python",
+      "/trending/rust",
+      "/trending/typescript",
+    ]);
+    const csharp = await core.getSourceRanking({ sourceId: "github-trending", timeWindow: "week", filter: "csharp" });
+    expect(csharp.items).toHaveLength(15);
   });
 });

@@ -33,6 +33,8 @@
     "updated": "Cập nhật",
     "rank": "Hạng",
     "timeWindow": "Khung thời gian",
+    "languages": "Ngôn ngữ lập trình",
+    "allLanguages": "Mọi ngôn ngữ",
     "window": "{window, select, day {Hôm nay} other {Tuần này}}",
     "caption": "Bảng xếp hạng của {source}, {window, select, day {hôm nay} other {tuần này}}",
     "noRanking": "Bảng xếp hạng {window, select, day {hôm nay} other {tuần này}} của {source} sẽ hiện ở đây sau lần thu thập đầu tiên.",
