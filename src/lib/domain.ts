@@ -1,4 +1,5 @@
-import { createDomainCore, type DomainCore } from "@/domain";
+import { unstable_cache } from "next/cache";
+import { createDomainCore, type DomainCore, sourceIds } from "@/domain";
 import { createDb, type Db } from "@/domain/db/client";
 
 // One database client per server process, so dev hot reloads do not pile up connections.
@@ -14,3 +15,23 @@ export function domain(): DomainCore {
   }
   return createDomainCore({ db: globalForDomain.db, http: fetch });
 }
+
+/** The cache tag for everything a page shows from one Source; revalidated after that Source is ingested. */
+export function sourceTag(sourceId: string) {
+  return `source:${sourceId}`;
+}
+
+/**
+ * The Overview, cached until any Source in it is ingested again. The cache stores JSON,
+ * so moments come back as ISO strings.
+ */
+export const cachedOverview = unstable_cache(
+  async () =>
+    (await domain().getOverview()).map((block) => ({
+      sourceId: block.sourceId,
+      lastSucceededAt: block.lastSucceededAt?.toISOString() ?? null,
+      items: block.items.map((item) => ({ ...item, publishedAt: item.publishedAt?.toISOString() ?? null })),
+    })),
+  ["overview"],
+  { tags: sourceIds.map(sourceTag) },
+);

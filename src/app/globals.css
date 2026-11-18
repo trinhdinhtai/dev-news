@@ -28,6 +28,14 @@
 
 .measured { font-family: var(--font-outlier); font-variant-numeric: tabular-nums slashed-zero; }
 
+/* The Overview: one block per Source, each heading links to that Source's page */
+.overview-block { display: grid; gap: var(--space-sm); }
+.overview-block__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-xs) var(--space-lg); }
+.overview-block__link, .overview-block__more { text-decoration: none; border-radius: 2px; transition: color var(--dur-short) var(--ease-out); }
+.overview-block__link:hover, .overview-block__more:hover { color: var(--color-accent); }
+.overview-block__link:focus-visible, .overview-block__more:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+.overview-block__more { justify-self: end; color: var(--color-muted); font-size: var(--text-sm); }
+
 /* The ledger: the daily Source Ranking, on one hairline panel */
 .ledger-panel { padding: var(--space-md) var(--space-lg) 0; border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); background: var(--color-paper-2); color: var(--color-ink); }
 .ledger { width: 100%; border-collapse: collapse; }
