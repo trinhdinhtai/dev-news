@@ -15,10 +15,12 @@ if (!url) throw new Error("DATABASE_URL is not set; copy .env.example to .env");
 
 const db = createDb(url);
 try {
-  const core = createDomainCore({ db, http: fetch });
+  const core = createDomainCore({ db, http: fetch, secrets: { githubToken: process.env.GITHUB_TOKEN || undefined } });
   await core.ingest(sourceId, new Date());
-  const ranking = await core.getSourceRanking({ sourceId, timeWindow: "day" });
-  console.log(`Ingested ${sourceId}: ${ranking.items.length} Items in the daily Source Ranking.`);
+  for (const timeWindow of ["day", "week"] as const) {
+    const ranking = await core.getSourceRanking({ sourceId, timeWindow });
+    if (ranking.items.length > 0) console.log(`Ingested ${sourceId}: ${ranking.items.length} Items for the ${timeWindow}.`);
+  }
 } finally {
   await db.$client.end();
 }
