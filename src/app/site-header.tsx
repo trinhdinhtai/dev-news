@@ -1,37 +1,24 @@
 import { NewspaperIcon } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { sourceDisplay } from "./sources/source-names";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
-/** One top bar: the wordmark, then a link to each Source's page. */
+/** The bar above each page: the sidebar toggle, and on a phone, where the sidebar is hidden, the wordmark. */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4 sm:px-6">
-        <Link
-          href="/"
-          aria-label="Dev News, home"
-          className="flex shrink-0 items-center gap-2 rounded-md font-heading whitespace-nowrap text-lg font-medium tracking-tight focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <NewspaperIcon className="size-4" aria-hidden />
-          </span>
-          Dev News
-        </Link>
-        <nav aria-label="Sources" className="ml-auto flex items-center gap-1 overflow-x-auto">
-          {Object.entries(sourceDisplay).map(([sourceId, display]) => (
-            <Button
-              key={sourceId}
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={`/sources/${sourceId}`} />}
-            >
-              {display.name}
-            </Button>
-          ))}
-        </nav>
-      </div>
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
+      <SidebarTrigger className="-ml-1" />
+      <Separator orientation="vertical" className="mr-1 data-vertical:h-4 data-vertical:self-center md:hidden" />
+      <Link
+        href="/"
+        aria-label="Dev News, home"
+        className="flex items-center gap-2 rounded-md font-heading font-medium tracking-tight whitespace-nowrap focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none md:hidden"
+      >
+        <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <NewspaperIcon className="size-3.5" aria-hidden />
+        </span>
+        Dev News
+      </Link>
     </header>
   );
 }

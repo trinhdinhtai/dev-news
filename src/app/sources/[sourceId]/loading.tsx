@@ -6,7 +6,7 @@ const ROWS = 12;
 /** A skeleton in the shape of the ledger that is coming. */
 export default function Loading() {
   return (
-    <main
+    <div
       id="main"
       className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12"
       aria-busy="true"
@@ -30,6 +30,6 @@ export default function Loading() {
           </div>
         ))}
       </Card>
-    </main>
+    </div>
   );
 }

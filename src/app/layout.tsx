@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Mono, Host_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AppSidebar } from "./app-sidebar";
 import { SiteHeader } from "./site-header";
 import "./globals.css";
 
@@ -29,8 +32,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to the ranking
         </a>
-        <SiteHeader />
-        {children}
+        <TooltipProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <SiteHeader />
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

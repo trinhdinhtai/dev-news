@@ -29,7 +29,7 @@ export default async function SourcePage({ params }: Props) {
   const ranking = await domain().getSourceRanking({ sourceId, timeWindow: "day" });
 
   return (
-    <main id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+    <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-2">
           <h1 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl">{display.name}</h1>
@@ -57,6 +57,6 @@ export default async function SourcePage({ params }: Props) {
           {display.credit} Each {display.itemLabel.toLowerCase()} opens at its source in a new tab.
         </p>
       </footer>
-    </main>
+    </div>
   );
 }

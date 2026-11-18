@@ -13,7 +13,7 @@ export default async function Overview() {
   const overview = await cachedOverview();
 
   return (
-    <main id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+    <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl">
           Today on every Source
@@ -68,6 +68,6 @@ export default async function Overview() {
           );
         })
       )}
-    </main>
+    </div>
   );
 }
