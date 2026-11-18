@@ -2,11 +2,11 @@ import { and, asc, desc, eq, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "./db/client";
 import { items, type Metrics, rawResponses, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
-import { adapters, findAdapter } from "./sources";
+import { adapters as sourceConfig } from "./sources";
 import type { FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "./sources/types";
 
 /** Every Source the domain core can ingest. */
-export const sourceIds: readonly string[] = adapters.map((adapter) => adapter.id);
+export const sourceIds: readonly string[] = sourceConfig.map((adapter) => adapter.id);
 
 export type { Db } from "./db/client";
 export type { Http } from "./http";
@@ -177,9 +177,20 @@ async function replaceRanking(tx: Tx, adapter: SourceAdapter, ranking: FetchedRa
  * The domain core. Its write side, `ingest`, pulls a Source through its adapter;
  * its read side answers the web app. Nothing outside it talks to a Source.
  */
-export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Http; secrets?: Secrets }) {
+export function createDomainCore({
+  db,
+  http,
+  secrets = {},
+  adapters = sourceConfig,
+}: {
+  db: Db;
+  http: Http;
+  secrets?: Secrets;
+  /** The Sources it knows, in the Overview's default order; the Source config unless a test swaps it. */
+  adapters?: readonly SourceAdapter[];
+}) {
   async function ingest(sourceId: string, now: Date): Promise<void> {
-    const adapter = findAdapter(sourceId);
+    const adapter = adapters.find((candidate) => candidate.id === sourceId);
     if (!adapter) throw new Error(`Unknown Source: ${sourceId}`);
 
     const recorder = recordingHttp(http);
@@ -308,9 +319,10 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
   /**
    * The top Items of every Source's daily Source Ranking, Sources in the default order
    * of the Source config. A Source with no ranking yet is left out; scores are never
-   * compared across Sources.
+   * compared across Sources. A Regional Source shows only when the interface is in its
+   * language.
    */
-  async function getOverview(): Promise<OverviewBlock[]> {
+  async function getOverview({ uiLanguage }: { uiLanguage: string }): Promise<OverviewBlock[]> {
     const rows = await db
       .select({
         sourceId: sourceRankings.sourceId,
@@ -329,7 +341,8 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
       )
       .orderBy(asc(sourceRankings.rank));
 
-    return adapters.flatMap(({ id }): OverviewBlock[] => {
+    return adapters.flatMap(({ id, regionalLanguage }): OverviewBlock[] => {
+      if (regionalLanguage !== null && regionalLanguage !== uiLanguage) return [];
       const ranked = rows.filter((row) => row.sourceId === id);
       if (ranked.length === 0) return [];
       return [

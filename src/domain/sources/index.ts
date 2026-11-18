@@ -7,7 +7,3 @@ import type { SourceAdapter } from "./types";
  * Hacker News, daily.dev, dev.to, Reddit, YouTube, YouTube Shorts as each one lands.
  */
 export const adapters: SourceAdapter[] = [githubTrending, hackerNews];
-
-export function findAdapter(sourceId: string): SourceAdapter | undefined {
-  return adapters.find((adapter) => adapter.id === sourceId);
-}

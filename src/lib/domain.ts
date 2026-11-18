@@ -45,15 +45,17 @@ export function cachedRanking(sourceId: string, timeWindow: TimeWindow) {
 }
 
 /**
- * The Overview, cached until any Source in it is ingested again. The cache stores JSON,
- * so moments come back as ISO strings.
+ * The Overview for one interface language, cached until any Source in it is ingested
+ * again. The cache stores JSON, so moments come back as ISO strings.
  */
-export const cachedOverview = unstable_cache(
-  async () =>
-    (await domain().getOverview()).map((block) => ({
-      sourceId: block.sourceId,
-      ...toCached(block.lastSucceededAt, block.items),
-    })),
-  ["overview"],
-  { tags: sourceIds.map(sourceTag) },
-);
+export function cachedOverview(uiLanguage: string) {
+  return unstable_cache(
+    async () =>
+      (await domain().getOverview({ uiLanguage })).map((block) => ({
+        sourceId: block.sourceId,
+        ...toCached(block.lastSucceededAt, block.items),
+      })),
+    ["overview", uiLanguage],
+    { tags: sourceIds.map(sourceTag) },
+  )();
+}
