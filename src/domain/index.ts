@@ -32,7 +32,7 @@ const DUE_TOLERANCE_MINUTES = 5;
 /** What a collection run did with one Source. */
 export type CollectResult = { sourceId: string; ok: true } | { sourceId: string; ok: false; error: string };
 
-/** How long raw Source responses are kept. */
+/** How long the raw Source responses of a failed ingest are kept. */
 const RAW_RESPONSE_DAYS = 7;
 
 /** One answer a Source gave during an ingest. */
@@ -42,10 +42,12 @@ export interface RawResponse {
   url: string;
   status: number;
   body: string;
+  /** Whether the ingest that made the request failed. */
+  failed: boolean;
 }
 
 /** What one request got back, before it is stored against its Source and ingest. */
-type RawAnswer = Omit<RawResponse, "sourceId" | "fetchedAt">;
+type RawAnswer = Omit<RawResponse, "sourceId" | "fetchedAt" | "failed">;
 
 /** Wraps the HTTP layer so every answer it gets is kept, whether or not the adapter can read it. */
 function recordingHttp(http: Http) {
@@ -207,7 +209,7 @@ export function createDomainCore({
             set: { regionalLanguage: adapter.regionalLanguage, lastSucceededAt: now },
           });
         for (const ranking of rankings) await replaceRanking(tx, adapter, ranking, now);
-        await keepRawResponses(tx, adapter.id, now, recorder.answers);
+        await keepRawResponses(tx, adapter.id, now, recorder.answers, { failed: false });
       });
     } catch (error) {
       // The last good Source Ranking and its success time stay; only the failure is recorded.
@@ -218,7 +220,7 @@ export function createDomainCore({
             .insert(sources)
             .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastError, lastErrorAt: now })
             .onConflictDoUpdate({ target: sources.id, set: { lastError, lastErrorAt: now } });
-          await keepRawResponses(tx, adapter.id, now, recorder.answers);
+          await keepRawResponses(tx, adapter.id, now, recorder.answers, { failed: true });
         })
         // If even that fails (the database is down, say), the ingest's own error is the one to report.
         .catch(() => {});
@@ -226,10 +228,23 @@ export function createDomainCore({
     }
   }
 
-  /** Stores an ingest's raw responses and drops those older than RAW_RESPONSE_DAYS. The Source row must exist. */
-  async function keepRawResponses(tx: Tx, sourceId: string, now: Date, answers: RawAnswer[]) {
+  /**
+   * Stores an ingest's raw responses. A successful ingest replaces the previous successful
+   * one's, since a working Source needs only its latest answers; a failed ingest's are kept
+   * for RAW_RESPONSE_DAYS, so the failure can be diagnosed. The Source row must exist.
+   */
+  async function keepRawResponses(
+    tx: Tx,
+    sourceId: string,
+    now: Date,
+    answers: RawAnswer[],
+    { failed }: { failed: boolean },
+  ) {
+    if (!failed) {
+      await tx.delete(rawResponses).where(and(eq(rawResponses.sourceId, sourceId), eq(rawResponses.failed, false)));
+    }
     if (answers.length > 0) {
-      await tx.insert(rawResponses).values(answers.map((answer) => ({ sourceId, fetchedAt: now, ...answer })));
+      await tx.insert(rawResponses).values(answers.map((answer) => ({ sourceId, fetchedAt: now, failed, ...answer })));
     }
     const cutoff = new Date(now.getTime() - RAW_RESPONSE_DAYS * 24 * 60 * 60 * 1000);
     await tx.delete(rawResponses).where(and(eq(rawResponses.sourceId, sourceId), lt(rawResponses.fetchedAt, cutoff)));
@@ -244,6 +259,7 @@ export function createDomainCore({
         url: rawResponses.url,
         status: rawResponses.status,
         body: rawResponses.body,
+        failed: rawResponses.failed,
       })
       .from(rawResponses)
       .where(eq(rawResponses.sourceId, sourceId))

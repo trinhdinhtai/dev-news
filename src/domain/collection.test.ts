@@ -83,21 +83,37 @@ describe("Raw Source responses", () => {
     expect(responses.map((response) => JSON.parse(response.body))).toEqual([{ hits: "nope" }]);
   });
 
-  it("drops the responses of ingests more than a week old", async () => {
+  it("keeps only the latest successful ingest's responses", async () => {
     const core = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
-    const day = 24 * 60 * 60 * 1000;
+    const later = new Date(HN_AT.getTime() + 30 * 60 * 1000);
 
     await core.ingest("hacker-news", HN_AT);
-    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 6 * day));
-    await core.ingest("hacker-news", new Date(HN_AT.getTime() + 8 * day));
+    await core.ingest("hacker-news", later);
     const responses = await core.getRawResponses("hacker-news");
 
-    // Each ingest keeps its day and its week answer.
-    expect(responses.map((response) => response.fetchedAt)).toEqual([
-      new Date(HN_AT.getTime() + 8 * day),
-      new Date(HN_AT.getTime() + 8 * day),
-      new Date(HN_AT.getTime() + 6 * day),
-      new Date(HN_AT.getTime() + 6 * day),
+    // The day and the week answer of the later ingest.
+    expect(responses.map((response) => [response.fetchedAt, response.failed])).toEqual([
+      [later, false],
+      [later, false],
+    ]);
+  });
+
+  it("keeps a failed ingest's responses for a week, beside the latest successful ones", async () => {
+    const good = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": hnDayResponse }) });
+    const broken = createDomainCore({ db: testDb, http: fakeHttp({ "hn.algolia.com": { hits: "nope" } }) });
+    const at = (days: number) => new Date(HN_AT.getTime() + days * 24 * 60 * 60 * 1000);
+
+    await expect(broken.ingest("hacker-news", at(0))).rejects.toThrow();
+    await good.ingest("hacker-news", at(1));
+    await expect(broken.ingest("hacker-news", at(6))).rejects.toThrow();
+    await good.ingest("hacker-news", at(8));
+    const responses = await good.getRawResponses("hacker-news");
+
+    // The failure on day 0 is more than a week old and the success on day 1 is no longer the latest.
+    expect(responses.map((response) => [response.fetchedAt, response.failed])).toEqual([
+      [at(8), false],
+      [at(8), false],
+      [at(6), true],
     ]);
   });
 });
