@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { createDomainCore, type DomainCore, type RankedItem, sourceIds } from "@/domain";
+import { createDomainCore, type DomainCore, type RankedItem, sourceIds, type TimeWindow } from "@/domain";
 import { createDb, type Db } from "@/domain/db/client";
 
 // One database client per server process, so dev hot reloads do not pile up connections.
@@ -30,16 +30,16 @@ function toCached(lastSucceededAt: Date | null, items: RankedItem[]) {
 }
 
 /**
- * A Source's daily Source Ranking, cached until that Source is ingested again.
+ * A Source's Source Ranking for one Time Window, cached until that Source is ingested again.
  * The cache stores JSON, so moments come back as ISO strings.
  */
-export function cachedDayRanking(sourceId: string) {
+export function cachedRanking(sourceId: string, timeWindow: TimeWindow) {
   return unstable_cache(
     async () => {
-      const ranking = await domain().getSourceRanking({ sourceId, timeWindow: "day" });
+      const ranking = await domain().getSourceRanking({ sourceId, timeWindow });
       return toCached(ranking.lastSucceededAt, ranking.items);
     },
-    ["day-ranking", sourceId],
+    [`${timeWindow}-ranking`, sourceId],
     { tags: [sourceTag(sourceId)] },
   )();
 }

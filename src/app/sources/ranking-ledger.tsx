@@ -1,4 +1,4 @@
-import type { RankedItem } from "@/domain";
+import type { RankedItem, TimeWindow } from "@/domain";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -20,13 +20,16 @@ function hostOf(url: string) {
 /** A Source Ranking as a table: rank, the Item, and the figures its Source shows. */
 export function RankingLedger({
   display,
+  timeWindow,
   items,
   caption,
 }: {
   display: SourceDisplay;
+  timeWindow: TimeWindow;
   items: LedgerItem[];
   caption: string;
 }) {
+  const { figures: columns } = display.rankings[timeWindow];
   return (
     <Table>
       <TableCaption className="sr-only">{caption}</TableCaption>
@@ -34,12 +37,12 @@ export function RankingLedger({
         <TableRow className="hover:bg-transparent">
           <TableHead className="w-12 pl-4 text-muted-foreground sm:pl-6">Rank</TableHead>
           <TableHead className="text-muted-foreground">{display.itemLabel}</TableHead>
-          {display.figures.map((figure, i) => (
+          {columns.map((figure, i) => (
             <TableHead
               key={figure.metric}
               className={cn(
                 "hidden text-right text-muted-foreground sm:table-cell",
-                i === display.figures.length - 1 && "pr-4 sm:pr-6",
+                i === columns.length - 1 && "pr-4 sm:pr-6",
               )}
             >
               {figure.label}
@@ -70,7 +73,7 @@ export function RankingLedger({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {origin && <Badge variant="secondary">{origin}</Badge>}
                     {/* On a phone the figure columns fold into this line, each with its unit. */}
-                    {display.figures.map((figure) => (
+                    {columns.map((figure) => (
                       <span key={figure.metric} className="font-mono tabular-nums sm:hidden">
                         {figures.format(item.metrics[figure.metric] ?? 0)} {figure.unit}
                       </span>
@@ -78,12 +81,12 @@ export function RankingLedger({
                   </div>
                 </div>
               </TableCell>
-              {display.figures.map((figure, i) => (
+              {columns.map((figure, i) => (
                 <TableCell
                   key={figure.metric}
                   className={cn(
                     "hidden py-3.5 text-right align-top font-mono tabular-nums sm:table-cell",
-                    i === display.figures.length - 1 && "pr-4 sm:pr-6",
+                    i === columns.length - 1 && "pr-4 sm:pr-6",
                   )}
                 >
                   {figures.format(item.metrics[figure.metric] ?? 0)}
