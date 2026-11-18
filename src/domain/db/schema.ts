@@ -26,6 +26,8 @@ export const items = pgTable(
     description: text("description"),
     thumbnailUrl: text("thumbnail_url"),
     contentLanguage: text("content_language"),
+    /** A repo's main programming language, such as "Rust"; null for Items that are not code. */
+    programmingLanguage: text("programming_language"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     /** Metrics as of the latest ingest. */
     metrics: jsonb("metrics").$type<Metrics>().notNull(),

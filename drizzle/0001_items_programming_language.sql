@@ -1,0 +1,1 @@
+ALTER TABLE "items" ADD COLUMN "programming_language" text;
