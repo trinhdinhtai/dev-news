@@ -15,16 +15,25 @@ export async function resetTestDb() {
 }
 
 /**
- * An HTTP layer that answers from recorded Source responses, keyed by host.
- * Every requested URL is kept in `requests` so a test can check what was asked for.
+ * An HTTP layer that answers from recorded Source responses. A key is a host, or a
+ * host and path with an optional query (`github.com/trending?since=daily`); the most
+ * specific match wins. A string answers as HTML, anything else as JSON.
+ * Every requested URL and its headers are kept so a test can check what was asked for.
  */
-export function fakeHttp(responses: Record<string, unknown>): Http & { requests: URL[] } {
+export function fakeHttp(responses: Record<string, unknown>): Http & { requests: URL[]; headers: Headers[] } {
   const requests: URL[] = [];
-  const http = async (input: string) => {
+  const headers: Headers[] = [];
+  const http = async (input: string, init?: RequestInit) => {
     const url = new URL(input);
     requests.push(url);
-    if (!(url.host in responses)) return new Response("not found", { status: 404 });
-    return Response.json(responses[url.host]);
+    headers.push(new Headers(init?.headers));
+    const key = [url.host + url.pathname + url.search, url.host + url.pathname, url.host].find(
+      (candidate) => candidate in responses,
+    );
+    if (key === undefined) return new Response("not found", { status: 404 });
+    const body = responses[key];
+    if (typeof body === "string") return new Response(body, { headers: { "content-type": "text/html" } });
+    return Response.json(body);
   };
-  return Object.assign(http, { requests });
+  return Object.assign(http, { requests, headers });
 }
