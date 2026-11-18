@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { sourceIds } from "@/domain";
 import { domain } from "@/lib/domain";
 import { LocalTime } from "../../local-time";
+import { NoRanking } from "../no-ranking";
 import { RankingLedger } from "../ranking-ledger";
 import { sourceDisplay } from "../source-names";
 
@@ -26,33 +29,33 @@ export default async function SourcePage({ params }: Props) {
   const ranking = await domain().getSourceRanking({ sourceId, timeWindow: "day" });
 
   return (
-    <main id="main" className="container screen">
-      <div className="screen__head">
-        <div className="screen__title">
-          <h1>{display.name}</h1>
-          <p className="screen__line">{display.dayRanking}</p>
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-2">
+          <h1 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl">{display.name}</h1>
+          <p className="max-w-prose text-muted-foreground">{display.dayRanking}</p>
         </div>
         {ranking.lastSucceededAt && (
-          <p className="screen__updated">
+          <Badge variant="outline">
             Updated <LocalTime iso={ranking.lastSucceededAt.toISOString()} />
-          </p>
+          </Badge>
         )}
       </div>
 
       {ranking.items.length === 0 ? (
-        <section className="empty" aria-labelledby="empty-head">
-          <h2 id="empty-head">No ranking collected yet</h2>
-          <p>
-            The {display.name} ranking appears here after its first collection run. To collect it now, run{" "}
-            <code className="measured">pnpm ingest {sourceId}</code>.
-          </p>
-        </section>
+        <NoRanking command={`pnpm ingest ${sourceId}`}>
+          The {display.name} ranking appears here after its first collection run.
+        </NoRanking>
       ) : (
-        <RankingLedger display={display} items={ranking.items} caption={`${display.name} daily Source Ranking`} />
+        <Card className="py-0">
+          <RankingLedger display={display} items={ranking.items} caption={`${display.name} daily Source Ranking`} />
+        </Card>
       )}
 
-      <footer className="screen__foot">
-        <p>{display.credit} Each {display.itemLabel.toLowerCase()} opens at its source in a new tab.</p>
+      <footer className="text-sm text-muted-foreground">
+        <p>
+          {display.credit} Each {display.itemLabel.toLowerCase()} opens at its source in a new tab.
+        </p>
       </footer>
     </main>
   );
