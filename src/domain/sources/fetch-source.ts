@@ -1,6 +1,7 @@
 import type { Http } from "../http";
 
-const USER_AGENT = "dev-news/0.1 (trending aggregator for developers)";
+// Names the app and links to it, so a Source can see who is calling and how to reach them.
+const USER_AGENT = "dev-news/0.1 (+https://github.com/trinhdinhtai/dev-news)";
 
 async function get(http: Http, url: URL, headers: Record<string, string>): Promise<Response> {
   const response = await http(url.toString(), { headers: { "user-agent": USER_AGENT, ...headers } });
