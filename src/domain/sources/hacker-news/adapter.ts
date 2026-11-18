@@ -1,10 +1,12 @@
 import { z } from "zod";
 import type { Http } from "../../http";
 import { fetchJson } from "../fetch-source";
-import type { FetchedItem, SourceAdapter } from "../types";
+import type { FetchedItem, FetchedRanking, SourceAdapter, TimeWindow } from "../types";
 
 const RANKING_SIZE = 30;
 const DAY_SECONDS = 24 * 60 * 60;
+/** How far back each Time Window reaches: the last 24 hours, or the last 7 days. */
+const WINDOW_SECONDS: Record<TimeWindow, number> = { day: DAY_SECONDS, week: 7 * DAY_SECONDS };
 
 const searchResponse = z.object({
   hits: z.array(
@@ -47,6 +49,12 @@ export const hackerNews: SourceAdapter = {
   intervalMinutes: 30,
   async fetchRankings(http, now) {
     const nowSeconds = Math.floor(now.getTime() / 1000);
-    return [{ timeWindow: "day", filter: "", items: await bestStoriesSince(http, nowSeconds - DAY_SECONDS) }];
+    // One after the other, so the Source is asked one thing at a time.
+    const rankings: FetchedRanking[] = [];
+    for (const timeWindow of ["day", "week"] as const) {
+      const items = await bestStoriesSince(http, nowSeconds - WINDOW_SECONDS[timeWindow]);
+      rankings.push({ timeWindow, filter: "", items });
+    }
+    return rankings;
   },
 };

@@ -67,7 +67,8 @@ describe("Raw Source responses", () => {
     await core.ingest("hacker-news", HN_AT);
     const responses = await core.getRawResponses("hacker-news");
 
-    expect(responses).toHaveLength(1);
+    // One answer for the day search, one for the week search.
+    expect(responses).toHaveLength(2);
     expect(responses[0]).toMatchObject({ sourceId: "hacker-news", fetchedAt: HN_AT, status: 200 });
     expect(new URL(responses[0].url).host).toBe("hn.algolia.com");
     expect(JSON.parse(responses[0].body)).toEqual(hnDayResponse);
@@ -91,8 +92,11 @@ describe("Raw Source responses", () => {
     await core.ingest("hacker-news", new Date(HN_AT.getTime() + 8 * day));
     const responses = await core.getRawResponses("hacker-news");
 
+    // Each ingest keeps its day and its week answer.
     expect(responses.map((response) => response.fetchedAt)).toEqual([
       new Date(HN_AT.getTime() + 8 * day),
+      new Date(HN_AT.getTime() + 8 * day),
+      new Date(HN_AT.getTime() + 6 * day),
       new Date(HN_AT.getTime() + 6 * day),
     ]);
   });
