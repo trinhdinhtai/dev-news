@@ -1,16 +1,32 @@
 "use client";
 
+import { DatabaseIcon, RotateCwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+
 /** Shown when the ranking cannot be read, for instance when the database is unreachable. */
 export default function RankingError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main id="main" className="container screen">
-      <section className="empty" aria-labelledby="error-head" role="alert">
-        <h2 id="error-head">The ranking could not be read</h2>
-        <p>The database did not answer. Try again in a moment; the last collected ranking is kept until it does.</p>
-        <button type="button" className="btn" onClick={reset}>
-          Try again
-        </button>
-      </section>
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+      <Empty className="border" role="alert">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <DatabaseIcon />
+          </EmptyMedia>
+          <EmptyTitle>
+            <h2>The ranking could not be read</h2>
+          </EmptyTitle>
+          <EmptyDescription>
+            The database did not answer. Try again in a moment; the last collected ranking is kept until it does.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button variant="outline" onClick={reset}>
+            <RotateCwIcon data-icon="inline-start" />
+            Try again
+          </Button>
+        </EmptyContent>
+      </Empty>
     </main>
   );
 }

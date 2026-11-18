@@ -15,7 +15,7 @@ export function LocalTime({ iso }: { iso: string }) {
     () => format(iso, "UTC"),
   );
   return (
-    <time dateTime={iso} className="measured">
+    <time dateTime={iso} className="font-mono tabular-nums">
       {label}
     </time>
   );
