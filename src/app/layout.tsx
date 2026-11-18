@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Mono, Host_Grotesk } from "next/font/google";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { SiteHeader } from "./site-header";
 import "./globals.css";
 
-const hostGrotesk = Host_Grotesk({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-host-grotesk" });
+const hostGrotesk = Host_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-host-grotesk" });
 const atkinsonMono = Atkinson_Hyperlegible_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -20,18 +21,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${hostGrotesk.variable} ${atkinsonMono.variable}`}>
-      <body>
-        <a className="skip" href="#main">
+    <html lang="en" className={cn("dark", hostGrotesk.variable, atkinsonMono.variable)}>
+      <body className="min-h-dvh">
+        <a
+          href="#main"
+          className="sr-only rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-4 focus:z-50"
+        >
           Skip to the ranking
         </a>
-        <header className="bar">
-          <div className="container bar__inner">
-            <Link href="/" className="wordmark" aria-label="Dev News, home">
-              Dev News
-            </Link>
-          </div>
-        </header>
+        <SiteHeader />
         {children}
       </body>
     </html>
