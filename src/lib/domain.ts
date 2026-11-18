@@ -30,16 +30,17 @@ function toCached(lastSucceededAt: Date | null, items: RankedItem[]) {
 }
 
 /**
- * A Source's Source Ranking for one Time Window, cached until that Source is ingested again.
- * The cache stores JSON, so moments come back as ISO strings.
+ * A Source's Source Ranking for one Time Window and filter (empty for the unfiltered one),
+ * cached until that Source is ingested again. The cache stores JSON, so moments come back
+ * as ISO strings.
  */
-export function cachedRanking(sourceId: string, timeWindow: TimeWindow) {
+export function cachedRanking(sourceId: string, timeWindow: TimeWindow, filter: string) {
   return unstable_cache(
     async () => {
-      const ranking = await domain().getSourceRanking({ sourceId, timeWindow });
+      const ranking = await domain().getSourceRanking({ sourceId, timeWindow, filter });
       return toCached(ranking.lastSucceededAt, ranking.items);
     },
-    [`${timeWindow}-ranking`, sourceId],
+    [`${timeWindow}-ranking`, sourceId, filter],
     { tags: [sourceTag(sourceId)] },
   )();
 }

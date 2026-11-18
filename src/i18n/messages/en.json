@@ -33,6 +33,8 @@
     "updated": "Updated",
     "rank": "Rank",
     "timeWindow": "Time Window",
+    "languages": "Programming language",
+    "allLanguages": "All languages",
     "window": "{window, select, day {Today} other {This week}}",
     "caption": "{source} Source Ranking, {window, select, day {today} other {this week}}",
     "noRanking": "The {source} ranking for {window, select, day {today} other {this week}} appears here after its first collection run.",
