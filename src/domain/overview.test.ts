@@ -5,7 +5,7 @@ import hnDayResponse from "./sources/hacker-news/__fixtures__/search-day.json";
 import { createDomainCore } from "./index";
 import { hackerNews } from "./sources/hacker-news/adapter";
 import type { SourceAdapter } from "./sources/types";
-import { fakeHttp, resetTestDb, testDb } from "./testing";
+import { fakeHttp, resetTestDb, testDb, unfilteredSources } from "./testing";
 
 const trendingPage = (name: string) =>
   readFileSync(new URL(`./sources/github-trending/__fixtures__/${name}`, import.meta.url), "utf8");
@@ -25,7 +25,7 @@ describe("Overview", () => {
   beforeEach(resetTestDb);
 
   it("gives the top 5 Items of each Source's daily ranking, Sources in the default order", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) });
     // Ingested in the opposite order, so the Overview's order cannot come from insertion.
     await core.ingest("hacker-news", HN_AT);
     await core.ingest("github-trending", GITHUB_AT);
@@ -54,7 +54,7 @@ describe("Overview", () => {
   });
 
   it("leaves out a Source that has no ranking yet", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) });
     await core.ingest("hacker-news", HN_AT);
 
     const overview = await core.getOverview({ uiLanguage: "en" });
@@ -63,7 +63,7 @@ describe("Overview", () => {
   });
 
   it("is empty before any Source has been ingested", async () => {
-    const core = createDomainCore({ db: testDb, http: fakeHttp(everySource) });
+    const core = createDomainCore({ db: testDb, adapters: unfilteredSources, http: fakeHttp(everySource) });
 
     expect(await core.getOverview({ uiLanguage: "en" })).toEqual([]);
   });

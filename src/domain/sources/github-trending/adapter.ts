@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Http } from "../../http";
 import { fetchJson, fetchText } from "../fetch-source";
-import type { FetchedItem, FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "../types";
+import type { FetchedItem, FetchedRanking, Secrets, SourceAdapter, SourceFilter, TimeWindow } from "../types";
 
 const SINCE: Record<TimeWindow, string> = { day: "daily", week: "weekly" };
 
@@ -39,8 +39,26 @@ function parseTrendingPage(html: string): TrendingRow[] {
   });
 }
 
-async function fetchTrending(http: Http, timeWindow: TimeWindow): Promise<TrendingRow[]> {
-  const url = new URL("https://github.com/trending");
+/** A programming language GitHub Trending ranks on its own page; its Source Rankings are filtered by it. */
+export interface TrendingLanguage extends SourceFilter {
+  /** GitHub's own path segment for it, such as "c++" or "c%23". */
+  path: string;
+}
+
+/** The languages the app collects, besides the ranking of every language. */
+export const trendingLanguages: readonly TrendingLanguage[] = [
+  { id: "python", label: "Python", path: "python" },
+  { id: "typescript", label: "TypeScript", path: "typescript" },
+  { id: "javascript", label: "JavaScript", path: "javascript" },
+  { id: "go", label: "Go", path: "go" },
+  { id: "rust", label: "Rust", path: "rust" },
+  { id: "java", label: "Java", path: "java" },
+  { id: "cpp", label: "C++", path: "c++" },
+  { id: "csharp", label: "C#", path: "c%23" },
+];
+
+async function fetchTrending(http: Http, language: TrendingLanguage | null, timeWindow: TimeWindow) {
+  const url = new URL(language ? `https://github.com/trending/${language.path}` : "https://github.com/trending");
   url.searchParams.set("since", SINCE[timeWindow]);
   return parseTrendingPage(await fetchText(http, url));
 }
@@ -63,30 +81,45 @@ function toItem(row: TrendingRow, repo: Repo): FetchedItem {
   };
 }
 
-export const githubTrending: SourceAdapter = {
-  id: "github-trending",
-  regionalLanguage: null,
-  // Trending moves slowly, and each ingest spends about 30 REST API calls.
-  intervalMinutes: 60,
-  async fetchRankings(http, _now, secrets) {
-    const windows: TimeWindow[] = ["day", "week"];
-    const pages = await Promise.all(windows.map((timeWindow) => fetchTrending(http, timeWindow)));
+/**
+ * GitHub Trending, ranked for every language and for each of `languages`, in both
+ * Time Windows. Each is its own Source Ranking, filtered by the language.
+ */
+export function createGithubTrending({ languages }: { languages: readonly TrendingLanguage[] }): SourceAdapter {
+  return {
+    id: "github-trending",
+    regionalLanguage: null,
+    filters: languages.map(({ id, label }) => ({ id, label })),
+    // Trending moves slowly, and each ingest spends a REST call on every distinct repo of
+    // its pages: a few hundred with the eight languages, well inside a token's 5,000 an hour.
+    intervalMinutes: 60,
+    async fetchRankings(http, _now, secrets) {
+      const pages: { language: TrendingLanguage | null; timeWindow: TimeWindow; rows: TrendingRow[] }[] = [];
+      // One page at a time, so GitHub is asked one thing at a time.
+      for (const language of [null, ...languages]) {
+        for (const timeWindow of ["day", "week"] as const) {
+          pages.push({ language, timeWindow, rows: await fetchTrending(http, language, timeWindow) });
+        }
+      }
 
-    // A repo trending in both Time Windows is looked up once, and one at a time, so
-    // hitting the rate limit stops the ingest at the first refused call.
-    const names = [...new Set(pages.flat().map((row) => row.fullName))];
-    const repos = new Map<string, Repo>();
-    for (const name of names) repos.set(name, await fetchRepo(http, name, secrets));
+      // A repo on several pages is looked up once, and one at a time, so hitting the
+      // rate limit stops the ingest at the first refused call.
+      const names = [...new Set(pages.flatMap((page) => page.rows.map((row) => row.fullName)))];
+      const repos = new Map<string, Repo>();
+      for (const name of names) repos.set(name, await fetchRepo(http, name, secrets));
 
-    return windows.map(
-      (timeWindow, i): FetchedRanking => ({
-        timeWindow,
-        filter: "",
-        // GitHub's own order mixes in other signals; rank by stars gained in the Time Window instead.
-        items: pages[i]
-          .toSorted((a, b) => b.starsGained - a.starsGained)
-          .map((row) => toItem(row, repos.get(row.fullName)!)),
-      }),
-    );
-  },
-};
+      return pages.map(
+        (page): FetchedRanking => ({
+          timeWindow: page.timeWindow,
+          filter: page.language?.id ?? "",
+          // GitHub's own order mixes in other signals; rank by stars gained in the Time Window instead.
+          items: page.rows
+            .toSorted((a, b) => b.starsGained - a.starsGained)
+            .map((row) => toItem(row, repos.get(row.fullName)!)),
+        }),
+      );
+    },
+  };
+}
+
+export const githubTrending = createGithubTrending({ languages: trendingLanguages });

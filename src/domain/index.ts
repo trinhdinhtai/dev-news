@@ -3,14 +3,19 @@ import type { Db } from "./db/client";
 import { items, type Metrics, rawResponses, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
 import { adapters as sourceConfig } from "./sources";
-import type { FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "./sources/types";
+import type { FetchedRanking, Secrets, SourceAdapter, SourceFilter, TimeWindow } from "./sources/types";
 
 /** Every Source the domain core can ingest. */
 export const sourceIds: readonly string[] = sourceConfig.map((adapter) => adapter.id);
 
+/** The filters a Source ranks besides its unfiltered Source Ranking, such as GitHub Trending's languages. */
+export function sourceFilters(sourceId: string): readonly SourceFilter[] {
+  return sourceConfig.find((adapter) => adapter.id === sourceId)?.filters ?? [];
+}
+
 export type { Db } from "./db/client";
 export type { Http } from "./http";
-export type { Secrets, TimeWindow } from "./sources/types";
+export type { Secrets, SourceFilter, TimeWindow } from "./sources/types";
 
 /** How a Source's collection is going: when it last succeeded and when and why it last failed. */
 export interface SourceStatus {
@@ -89,6 +94,8 @@ export interface RankedItem {
 export interface SourceRanking {
   sourceId: string;
   timeWindow: TimeWindow;
+  /** Empty for the unfiltered ranking. */
+  filter: string;
   /** When this Source last ingested successfully; null if it never has. */
   lastSucceededAt: Date | null;
   items: RankedItem[];
@@ -308,12 +315,15 @@ export function createDomainCore({
     });
   }
 
+  /** A Source Ranking: unfiltered unless `filter` names one of the Source's filters, such as a GitHub language. */
   async function getSourceRanking({
     sourceId,
     timeWindow,
+    filter = "",
   }: {
     sourceId: string;
     timeWindow: TimeWindow;
+    filter?: string;
   }): Promise<SourceRanking> {
     const [source] = await db.select().from(sources).where(eq(sources.id, sourceId));
     const rows = await db
@@ -324,12 +334,12 @@ export function createDomainCore({
         and(
           eq(sourceRankings.sourceId, sourceId),
           eq(sourceRankings.timeWindow, timeWindow),
-          eq(sourceRankings.filter, ""),
+          eq(sourceRankings.filter, filter),
         ),
       )
       .orderBy(asc(sourceRankings.rank));
 
-    return { sourceId, timeWindow, lastSucceededAt: source?.lastSucceededAt ?? null, items: rows };
+    return { sourceId, timeWindow, filter, lastSucceededAt: source?.lastSucceededAt ?? null, items: rows };
   }
 
   /**

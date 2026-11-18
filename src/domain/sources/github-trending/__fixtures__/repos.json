@@ -198,5 +198,389 @@
     "language": "Ruby",
     "stargazers_count": 16329,
     "forks_count": 1423
+  },
+  "HKUDS/CLI-Anything": {
+    "full_name": "HKUDS/CLI-Anything",
+    "html_url": "https://github.com/HKUDS/CLI-Anything",
+    "description": "\"CLI-Anything: Making ALL Software Agent-Native\" -- CLI-Hub: https://clianything.cc/",
+    "language": "Python",
+    "stargazers_count": 59403,
+    "forks_count": 5382
+  },
+  "NVIDIA/SkillEvaluator": {
+    "full_name": "NVIDIA/SkillEvaluator",
+    "html_url": "https://github.com/NVIDIA/SkillEvaluator",
+    "description": "Multi-tier framework for evaluating AI agent skills and plugins with quality gates, semantic overlap detection, synthetic evaluation dataset generation, and live agent evaluation that measures how skills affect agent behavior.",
+    "language": "Python",
+    "stargazers_count": 3508,
+    "forks_count": 487
+  },
+  "huggingface/transformers": {
+    "full_name": "huggingface/transformers",
+    "html_url": "https://github.com/huggingface/transformers",
+    "description": "🤗 Transformers: the model-definition framework for state-of-the-art machine learning models in text, vision, audio, and multimodal models, for both inference and training. ",
+    "language": "Python",
+    "stargazers_count": 169223,
+    "forks_count": 35235
+  },
+  "p-e-w/heretic": {
+    "full_name": "p-e-w/heretic",
+    "html_url": "https://github.com/p-e-w/heretic",
+    "description": "Training-free language model modification: Remove censorship, suppress slop, reduce sycophancy, and more",
+    "language": "Python",
+    "stargazers_count": 41851,
+    "forks_count": 5087
+  },
+  "kajisho5/ffmpeg-skill": {
+    "full_name": "kajisho5/ffmpeg-skill",
+    "html_url": "https://github.com/kajisho5/ffmpeg-skill",
+    "description": "Local video editor for coding agents: 42 FFmpeg tools with a machine-readable contract and an MCP server, for Claude Code, Cursor and Codex. Cut, captions, reframe, loudness, platform exports. No cloud, no API keys.",
+    "language": "Python",
+    "stargazers_count": 7932,
+    "forks_count": 736
+  },
+  "XiaoYouChR/Ghost-Downloader-3": {
+    "full_name": "XiaoYouChR/Ghost-Downloader-3",
+    "html_url": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
+    "description": "The only downloader you need. 下载器的集大成者。",
+    "language": "Python",
+    "stargazers_count": 11977,
+    "forks_count": 751
+  },
+  "openai/whisper": {
+    "full_name": "openai/whisper",
+    "html_url": "https://github.com/openai/whisper",
+    "description": "Robust Speech Recognition via Large-Scale Weak Supervision",
+    "language": "Python",
+    "stargazers_count": 113016,
+    "forks_count": 13698
+  },
+  "anthropics/claude-code-security-review": {
+    "full_name": "anthropics/claude-code-security-review",
+    "html_url": "https://github.com/anthropics/claude-code-security-review",
+    "description": "An AI-powered security review GitHub Action using Claude to analyze code changes for security vulnerabilities.",
+    "language": "Python",
+    "stargazers_count": 6993,
+    "forks_count": 799
+  },
+  "vllm-project/vllm-ascend": {
+    "full_name": "vllm-project/vllm-ascend",
+    "html_url": "https://github.com/vllm-project/vllm-ascend",
+    "description": "Community maintained hardware plugin for vLLM on Huawei Ascend",
+    "language": "Python",
+    "stargazers_count": 3108,
+    "forks_count": 2761
+  },
+  "Dodaios/Dodaios": {
+    "full_name": "Dodaios/Dodaios",
+    "html_url": "https://github.com/Dodaios/Dodaios",
+    "description": "One workspace for everything you do with AI: Claude Code, Codex and seven more coding agents side by side, one assistant that runs them, voice, and docs. Open source, on your computer, on your own plans and keys. Formerly Personal Jarvis.",
+    "language": "Python",
+    "stargazers_count": 413,
+    "forks_count": 146
+  },
+  "home-assistant/core": {
+    "full_name": "home-assistant/core",
+    "html_url": "https://github.com/home-assistant/core",
+    "description": ":house_with_garden: Open source home automation that puts local control and privacy first.",
+    "language": "Python",
+    "stargazers_count": 92350,
+    "forks_count": 39358
+  },
+  "bojieli/ai-agent-book": {
+    "full_name": "bojieli/ai-agent-book",
+    "html_url": "https://github.com/bojieli/ai-agent-book",
+    "description": "《深入理解 AI Agent：设计原理与工程实践》（李博杰 著）开源主仓库：全书正文、编译版 PDF 与按章配套代码",
+    "language": "Python",
+    "stargazers_count": 58667,
+    "forks_count": 6866
+  },
+  "ansible/ansible": {
+    "full_name": "ansible/ansible",
+    "html_url": "https://github.com/ansible/ansible",
+    "description": "Ansible is a radically simple IT automation platform that makes your applications and systems easier to deploy and maintain. Automate everything from code deployment to network configuration to cloud management, in a language that approaches plain English, using SSH, with no agents to install on remote systems. https://docs.ansible.com.",
+    "language": "Python",
+    "stargazers_count": 71506,
+    "forks_count": 24472
+  },
+  "odoo/odoo": {
+    "full_name": "odoo/odoo",
+    "html_url": "https://github.com/odoo/odoo",
+    "description": "Odoo. Open Source Apps To Grow Your Business.",
+    "language": "Python",
+    "stargazers_count": 55898,
+    "forks_count": 34351
+  },
+  "ethanplusai/sellbird": {
+    "full_name": "ethanplusai/sellbird",
+    "html_url": "https://github.com/ethanplusai/sellbird",
+    "description": "Sellbird (formerly Harvey): the open-source outreach platform that runs on your Claude or ChatGPT plan. Finds companies and decision makers, verifies emails, writes personal cold email, sends it and handles the replies.",
+    "language": "Python",
+    "stargazers_count": 6425,
+    "forks_count": 1329
+  },
+  "davila7/claude-code-templates": {
+    "full_name": "davila7/claude-code-templates",
+    "html_url": "https://github.com/davila7/claude-code-templates",
+    "description": "Open-source registry and CLI for Claude Code components: agents, commands, skills, hooks, MCPs, settings and mods",
+    "language": "Python",
+    "stargazers_count": 33956,
+    "forks_count": 4032
+  },
+  "soxoj/maigret": {
+    "full_name": "soxoj/maigret",
+    "html_url": "https://github.com/soxoj/maigret",
+    "description": "🕵️‍♂️ Collect a dossier on a person by username from 6K websites",
+    "language": "Python",
+    "stargazers_count": 40882,
+    "forks_count": 3303
+  },
+  "homeassistant-ai/ha-mcp": {
+    "full_name": "homeassistant-ai/ha-mcp",
+    "html_url": "https://github.com/homeassistant-ai/ha-mcp",
+    "description": "Configure and automate Home Assistant with Claude, ChatGPT, and other AI assistants.",
+    "language": "Python",
+    "stargazers_count": 7976,
+    "forks_count": 471
+  },
+  "FujiwaraChoki/supoclip": {
+    "full_name": "FujiwaraChoki/supoclip",
+    "html_url": "https://github.com/FujiwaraChoki/supoclip",
+    "description": "An open-source OpusClip alternative",
+    "language": "Python",
+    "stargazers_count": 3503,
+    "forks_count": 785
+  },
+  "microsoft/PyRIT": {
+    "full_name": "microsoft/PyRIT",
+    "html_url": "https://github.com/microsoft/PyRIT",
+    "description": "Open-source AI red teaming toolkit from Microsoft. Test generative AI systems with automated scans, adaptive multi-turn attacks, and a web UI.",
+    "language": "Python",
+    "stargazers_count": 4933,
+    "forks_count": 1079
+  },
+  "NVIDIA/SkillSpector": {
+    "full_name": "NVIDIA/SkillSpector",
+    "html_url": "https://github.com/NVIDIA/SkillSpector",
+    "description": "Security scanner for AI agent skills. Detect vulnerabilities, malicious patterns, security risks, prompt injection, data exfiltration, and supply-chain risks in Claude Code, Codex, and MCP skills before you install them.",
+    "language": "Python",
+    "stargazers_count": 26736,
+    "forks_count": 2382
+  },
+  "andrewyng/openworker": {
+    "full_name": "andrewyng/openworker",
+    "html_url": "https://github.com/andrewyng/openworker",
+    "description": null,
+    "language": "Python",
+    "stargazers_count": 19440,
+    "forks_count": 2775
+  },
+  "ComposioHQ/awesome-claude-skills": {
+    "full_name": "ComposioHQ/awesome-claude-skills",
+    "html_url": "https://github.com/ComposioHQ/awesome-claude-skills",
+    "description": "A curated list of awesome Claude Skills, resources, and tools for customizing Claude AI workflows",
+    "language": "Python",
+    "stargazers_count": 79787,
+    "forks_count": 9780
+  },
+  "blader/humanizer": {
+    "full_name": "blader/humanizer",
+    "html_url": "https://github.com/blader/humanizer",
+    "description": "Agent skill that removes signs of AI-generated writing from text",
+    "language": "Python",
+    "stargazers_count": 70664,
+    "forks_count": 5549
+  },
+  "astral-sh/uv": {
+    "full_name": "astral-sh/uv",
+    "html_url": "https://github.com/astral-sh/uv",
+    "description": "An extremely fast Python package and project manager, written in Rust.",
+    "language": "Rust",
+    "stargazers_count": 92149,
+    "forks_count": 3911
+  },
+  "SaladDay/cc-switch-cli": {
+    "full_name": "SaladDay/cc-switch-cli",
+    "html_url": "https://github.com/SaladDay/cc-switch-cli",
+    "description": "⭐️ A cross-platform CLI All-in-One assistant tool for Claude Code, Codex & Gemini CLI.",
+    "language": "Rust",
+    "stargazers_count": 5525,
+    "forks_count": 362
+  },
+  "rustfs/rustfs": {
+    "full_name": "rustfs/rustfs",
+    "html_url": "https://github.com/rustfs/rustfs",
+    "description": "RustFS is an open-source, S3-compatible high-performance object storage system supporting migration and coexistence with other S3-compatible platforms such as MinIO and Ceph.",
+    "language": "Rust",
+    "stargazers_count": 36246,
+    "forks_count": 1682
+  },
+  "leepokai/Codync": {
+    "full_name": "leepokai/Codync",
+    "html_url": "https://github.com/leepokai/Codync",
+    "description": "Open source Grok Bot alternative, Bring your own agent and subscription: message Claude Code, Codex, Gemini CLI, Cursor, Copilot and 40+ AI agents as bots on your own computer, from iPhone, Mac, Windows, Linux or terminal. Agent-agnostic and free. Also a Muse and Dots alternative. Built in Rust.",
+    "language": "Rust",
+    "stargazers_count": 2244,
+    "forks_count": 229
+  },
+  "BurntSushi/ripgrep": {
+    "full_name": "BurntSushi/ripgrep",
+    "html_url": "https://github.com/BurntSushi/ripgrep",
+    "description": "ripgrep recursively searches directories for a regex pattern while respecting your gitignore",
+    "language": "Rust",
+    "stargazers_count": 70043,
+    "forks_count": 3587
+  },
+  "ViceVerse-cz/Serein": {
+    "full_name": "ViceVerse-cz/Serein",
+    "html_url": "https://github.com/ViceVerse-cz/Serein",
+    "description": "Tiny, Performant & 100% Native client for Discord made in Rust",
+    "language": "Rust",
+    "stargazers_count": 1412,
+    "forks_count": 138
+  },
+  "microsoft/edit": {
+    "full_name": "microsoft/edit",
+    "html_url": "https://github.com/microsoft/edit",
+    "description": "We all edit.",
+    "language": "Rust",
+    "stargazers_count": 14784,
+    "forks_count": 746
+  },
+  "antithesishq/bombadil": {
+    "full_name": "antithesishq/bombadil",
+    "html_url": "https://github.com/antithesishq/bombadil",
+    "description": "Property-based testing for web and terminal UIs",
+    "language": "Rust",
+    "stargazers_count": 2663,
+    "forks_count": 97
+  },
+  "screenpipe/screenpipe": {
+    "full_name": "screenpipe/screenpipe",
+    "html_url": "https://github.com/screenpipe/screenpipe",
+    "description": "YC (S26) | Screenpipe finds the work worth automating | Continuously record computer work locally, discover recurring workflows, and hand the result to any agent you already use.",
+    "language": "Rust",
+    "stargazers_count": 22425,
+    "forks_count": 2304
+  },
+  "stalwartlabs/stalwart": {
+    "full_name": "stalwartlabs/stalwart",
+    "html_url": "https://github.com/stalwartlabs/stalwart",
+    "description": "All-in-one Mail & Collaboration server. Secure, scalable and fluent in every protocol (IMAP, JMAP, SMTP, CalDAV, CardDAV, WebDAV).",
+    "language": "Rust",
+    "stargazers_count": 16026,
+    "forks_count": 1058
+  },
+  "louis-e/arnis": {
+    "full_name": "louis-e/arnis",
+    "html_url": "https://github.com/louis-e/arnis",
+    "description": "Generate any location from the real world in Minecraft with a high level of detail.",
+    "language": "Rust",
+    "stargazers_count": 18703,
+    "forks_count": 1585
+  },
+  "astral-sh/ruff": {
+    "full_name": "astral-sh/ruff",
+    "html_url": "https://github.com/astral-sh/ruff",
+    "description": "An extremely fast Python linter and code formatter, written in Rust.",
+    "language": "Rust",
+    "stargazers_count": 51288,
+    "forks_count": 2759
+  },
+  "rust-lang/rust": {
+    "full_name": "rust-lang/rust",
+    "html_url": "https://github.com/rust-lang/rust",
+    "description": "Empowering everyone to build reliable and efficient software.",
+    "language": "Rust",
+    "stargazers_count": 122234,
+    "forks_count": 16678
+  },
+  "tauri-apps/tauri": {
+    "full_name": "tauri-apps/tauri",
+    "html_url": "https://github.com/tauri-apps/tauri",
+    "description": "Build smaller, faster, and more secure desktop and mobile applications with a web frontend.",
+    "language": "Rust",
+    "stargazers_count": 112999,
+    "forks_count": 4231
+  },
+  "Automattic/harper": {
+    "full_name": "Automattic/harper",
+    "html_url": "https://github.com/Automattic/harper",
+    "description": "Offline, privacy-first grammar checker. Fast, open-source, Rust-powered",
+    "language": "Rust",
+    "stargazers_count": 17837,
+    "forks_count": 844
+  },
+  "malisper/pgrust": {
+    "full_name": "malisper/pgrust",
+    "html_url": "https://github.com/malisper/pgrust",
+    "description": "Postgres rewritten in Rust, now faster than Postgres and Clickhouse",
+    "language": "Rust",
+    "stargazers_count": 5883,
+    "forks_count": 235
+  },
+  "trycua/cua": {
+    "full_name": "trycua/cua",
+    "html_url": "https://github.com/trycua/cua",
+    "description": "Scale computer-use 2.0 with open-source drivers, cross-OS sandboxes, and benchmarks for training, evaluation, and data generation.",
+    "language": "Rust",
+    "stargazers_count": 32586,
+    "forks_count": 2458
+  },
+  "ModernRelay/omnigraph": {
+    "full_name": "ModernRelay/omnigraph",
+    "html_url": "https://github.com/ModernRelay/omnigraph",
+    "description": "Object-storage native graph database with branching and typed ontology",
+    "language": "Rust",
+    "stargazers_count": 3015,
+    "forks_count": 336
+  },
+  "block/buzz": {
+    "full_name": "block/buzz",
+    "html_url": "https://github.com/block/buzz",
+    "description": "A hive mind communication platform",
+    "language": "Rust",
+    "stargazers_count": 37571,
+    "forks_count": 4960
+  },
+  "zellij-org/zellij": {
+    "full_name": "zellij-org/zellij",
+    "html_url": "https://github.com/zellij-org/zellij",
+    "description": "A terminal workspace with batteries included",
+    "language": "Rust",
+    "stargazers_count": 36132,
+    "forks_count": 1548
+  },
+  "tokio-rs/topcoat": {
+    "full_name": "tokio-rs/topcoat",
+    "html_url": "https://github.com/tokio-rs/topcoat",
+    "description": "A batteries-included framework for building web apps",
+    "language": "Rust",
+    "stargazers_count": 7259,
+    "forks_count": 312
+  },
+  "martin-olivier/airgorah": {
+    "full_name": "martin-olivier/airgorah",
+    "html_url": "https://github.com/martin-olivier/airgorah",
+    "description": "A WiFi security auditing software",
+    "language": "Rust",
+    "stargazers_count": 6631,
+    "forks_count": 1093
+  },
+  "crmne/zapfast": {
+    "full_name": "crmne/zapfast",
+    "html_url": "https://github.com/crmne/zapfast",
+    "description": "ZapFast: a fast, native WhatsApp client in Rust and egui",
+    "language": "Rust",
+    "stargazers_count": 4719,
+    "forks_count": 473
+  },
+  "NVIDIA-NeMo/Switchyard": {
+    "full_name": "NVIDIA-NeMo/Switchyard",
+    "html_url": "https://github.com/NVIDIA-NeMo/Switchyard",
+    "description": "Switchyard lets LLM applications route traffic across models and providers while preserving native OpenAI and Anthropic API compatibility - enabling flexible model selection, benchmarking, and cost/performance optimization.",
+    "language": "Rust",
+    "stargazers_count": 3644,
+    "forks_count": 375
   }
 }

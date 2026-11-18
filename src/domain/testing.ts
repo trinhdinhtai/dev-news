@@ -2,6 +2,8 @@ import { afterAll } from "vitest";
 import { sql } from "drizzle-orm";
 import { createDb } from "./db/client";
 import type { Http } from "./http";
+import { createGithubTrending } from "./sources/github-trending/adapter";
+import { hackerNews } from "./sources/hacker-news/adapter";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error("TEST_DATABASE_URL is not set");
@@ -39,3 +41,9 @@ export function fakeHttp(responses: Record<string, unknown>): Http & { requests:
   };
   return Object.assign(http, { requests, headers });
 }
+
+/**
+ * The Source config with GitHub Trending reading only its pages for every language, for
+ * tests that do not care about the language filters and so need no page per language.
+ */
+export const unfilteredSources = [createGithubTrending({ languages: [] }), hackerNews];
