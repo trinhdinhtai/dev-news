@@ -12,6 +12,10 @@ _Tránh dùng_: provider, platform, kênh, feed
 Một Source mà nội dung chủ yếu thuộc một ngôn ngữ hoặc khu vực, ví dụ Viblo. Mặc định nó bị ẩn, trừ khi giao diện đang dùng đúng ngôn ngữ đó hoặc Member tự bật lên.
 _Tránh dùng_: local source, nguồn Việt
 
+**Source Category** (Nhóm nguồn):
+Loại Item mà một Source đưa lên: Code (repo), News (tin và thảo luận), Articles (bài viết) hoặc Videos. Mỗi Source thuộc đúng một nhóm; thanh điều hướng gom các Source theo nhóm này.
+_Tránh dùng_: type, kind, chuyên mục
+
 **Item** (Mục):
 Một nội dung trending đơn lẻ đến từ một Source: một repo, một bài viết, một video hoặc một bài đăng.
 _Tránh dùng_: post, bài, content, entry, link
