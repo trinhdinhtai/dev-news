@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Mono, Host_Grotesk } from "next/font/google";
+import { notFound } from "next/navigation";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "./app-sidebar";
 import { SiteHeader } from "./site-header";
-import "./globals.css";
+import "../globals.css";
 
 const hostGrotesk = Host_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-host-grotesk" });
 const atkinsonMono = Atkinson_Hyperlegible_Mono({
@@ -22,9 +26,20 @@ export const metadata: Metadata = {
   description: "What developers are reading today, ranked by each Source.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+/** Every page is built once per interface language. */
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+type Props = { children: ReactNode; params: Promise<{ locale: string }> };
+
+export default async function RootLayout({ children, params }: Props) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  setRequestLocale(locale);
+
   return (
-    <html lang="en" className={cn("dark", hostGrotesk.variable, atkinsonMono.variable)}>
+    <html lang={locale} className={cn("dark", hostGrotesk.variable, atkinsonMono.variable)}>
       <body className="min-h-dvh">
         <a
           href="#main"
@@ -32,15 +47,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to the ranking
         </a>
-        <TooltipProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <SiteHeader />
-              {children}
-            </SidebarInset>
-          </SidebarProvider>
-        </TooltipProvider>
+        <NextIntlClientProvider>
+          <TooltipProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <SiteHeader />
+                {children}
+              </SidebarInset>
+            </SidebarProvider>
+          </TooltipProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

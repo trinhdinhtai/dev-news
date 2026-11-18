@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { setRequestLocale } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { sourceIds, type TimeWindow } from "@/domain";
+import { Link } from "@/i18n/navigation";
 import { cachedRanking } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { LocalTime } from "../local-time";
@@ -53,7 +54,16 @@ function TimeWindowSwitch({ sourceId, current }: { sourceId: string; current: Ti
 }
 
 /** A Source's page: its Source Ranking for one Time Window, with a switch to the other. */
-export async function SourcePage({ sourceId, timeWindow }: { sourceId: string; timeWindow: TimeWindow }) {
+export async function SourcePage({
+  locale,
+  sourceId,
+  timeWindow,
+}: {
+  locale: string;
+  sourceId: string;
+  timeWindow: TimeWindow;
+}) {
+  setRequestLocale(locale);
   const display = sourceDisplay[sourceId];
   if (!display || !sourceIds.includes(sourceId)) notFound();
 

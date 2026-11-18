@@ -1,7 +1,7 @@
 import { NewspaperIcon } from "lucide-react";
-import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Link } from "@/i18n/navigation";
 
 /** The bar above each page: the sidebar toggle, and on a phone, where the sidebar is hidden, the wordmark. */
 export function SiteHeader() {

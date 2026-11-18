@@ -1,8 +1,6 @@
 "use client";
 
 import { LayoutGridIcon, NewspaperIcon } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +14,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Link, usePathname } from "@/i18n/navigation";
 import { sourceCategories, sourceDisplay } from "./sources/source-names";
 
 const sources = Object.entries(sourceDisplay).map(([sourceId, display]) => ({ sourceId, ...display }));
