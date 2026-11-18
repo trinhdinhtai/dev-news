@@ -21,6 +21,8 @@ pnpm dev                      # http://localhost:3000
 
 The web app only reads the database. A Source's page stays empty until `pnpm ingest <source-id>` has run for it.
 
+The home page is the Overview: the top five of each Source's daily ranking, built as a static page. Its data is cached under one `source:<id>` tag per Source. After an ingest, `pnpm ingest` calls `POST /api/revalidate` on `REVALIDATE_URL` with `REVALIDATE_SECRET`, which marks that Source's cached data stale (only the Overview is cached so far; Source pages read the database on each request). The next visit gets the old page while the new one is built, and the visit after that gets the new data. Without those two variables the cached pages stay as they are.
+
 ## Migrations
 
 The schema lives in `src/domain/db/schema.ts`. After changing it:
