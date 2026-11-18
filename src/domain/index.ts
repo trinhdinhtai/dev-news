@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, lte, sql } from "drizzle-orm";
 import type { Db } from "./db/client";
 import { items, type Metrics, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
@@ -27,6 +27,28 @@ export interface SourceRanking {
   sourceId: string;
   timeWindow: TimeWindow;
   /** When this Source last ingested successfully; null if it never has. */
+  lastSucceededAt: Date | null;
+  items: RankedItem[];
+}
+
+/** The columns that make up a RankedItem, shared by every read of a Source Ranking. */
+const rankedItemColumns = {
+  rank: sourceRankings.rank,
+  title: items.title,
+  url: items.url,
+  description: items.description,
+  thumbnailUrl: items.thumbnailUrl,
+  programmingLanguage: items.programmingLanguage,
+  publishedAt: items.publishedAt,
+  metrics: sourceRankings.metrics,
+};
+
+/** How many Items of each Source the Overview shows. */
+const OVERVIEW_SIZE = 5;
+
+/** One Source's block on the Overview: the top of its daily Source Ranking. */
+export interface OverviewBlock {
+  sourceId: string;
   lastSucceededAt: Date | null;
   items: RankedItem[];
 }
@@ -123,16 +145,7 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
   }): Promise<SourceRanking> {
     const [source] = await db.select().from(sources).where(eq(sources.id, sourceId));
     const rows = await db
-      .select({
-        rank: sourceRankings.rank,
-        title: items.title,
-        url: items.url,
-        description: items.description,
-        thumbnailUrl: items.thumbnailUrl,
-        programmingLanguage: items.programmingLanguage,
-        publishedAt: items.publishedAt,
-        metrics: sourceRankings.metrics,
-      })
+      .select(rankedItemColumns)
       .from(sourceRankings)
       .innerJoin(items, eq(items.id, sourceRankings.itemId))
       .where(
@@ -147,7 +160,44 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     return { sourceId, timeWindow, lastSucceededAt: source?.lastSucceededAt ?? null, items: rows };
   }
 
-  return { ingest, getSourceRanking };
+  /**
+   * The top Items of every Source's daily Source Ranking, Sources in the default order
+   * of the Source config. A Source with no ranking yet is left out; scores are never
+   * compared across Sources.
+   */
+  async function getOverview(): Promise<OverviewBlock[]> {
+    const rows = await db
+      .select({
+        sourceId: sourceRankings.sourceId,
+        lastSucceededAt: sources.lastSucceededAt,
+        item: rankedItemColumns,
+      })
+      .from(sourceRankings)
+      .innerJoin(items, eq(items.id, sourceRankings.itemId))
+      .innerJoin(sources, eq(sources.id, sourceRankings.sourceId))
+      .where(
+        and(
+          eq(sourceRankings.timeWindow, "day"),
+          eq(sourceRankings.filter, ""),
+          lte(sourceRankings.rank, OVERVIEW_SIZE),
+        ),
+      )
+      .orderBy(asc(sourceRankings.rank));
+
+    return adapters.flatMap(({ id }): OverviewBlock[] => {
+      const ranked = rows.filter((row) => row.sourceId === id);
+      if (ranked.length === 0) return [];
+      return [
+        {
+          sourceId: id,
+          lastSucceededAt: ranked[0].lastSucceededAt,
+          items: ranked.map((row) => row.item),
+        },
+      ];
+    });
+  }
+
+  return { ingest, getSourceRanking, getOverview };
 }
 
 export type DomainCore = ReturnType<typeof createDomainCore>;
