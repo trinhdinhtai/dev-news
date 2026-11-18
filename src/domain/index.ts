@@ -1,6 +1,6 @@
-import { and, asc, eq, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "./db/client";
-import { items, type Metrics, sourceRankings, sources } from "./db/schema";
+import { items, type Metrics, rawResponses, sourceRankings, sources } from "./db/schema";
 import type { Http } from "./http";
 import { adapters, findAdapter } from "./sources";
 import type { FetchedRanking, Secrets, SourceAdapter, TimeWindow } from "./sources/types";
@@ -22,6 +22,29 @@ export interface SourceStatus {
 
 /** The most of an error message kept on a Source; enough to diagnose, small enough to show. */
 const ERROR_LENGTH = 2000;
+
+/** How long raw Source responses are kept. */
+const RAW_RESPONSE_DAYS = 7;
+
+/** One answer a Source gave during an ingest. */
+export interface RawResponse {
+  sourceId: string;
+  fetchedAt: Date;
+  url: string;
+  status: number;
+  body: string;
+}
+
+/** Wraps the HTTP layer so every answer it gets is kept, whether or not the adapter can read it. */
+function recordingHttp(http: Http) {
+  const answers: { url: string; status: number; body: string }[] = [];
+  const recording: Http = async (url, init) => {
+    const response = await http(url, init);
+    answers.push({ url, status: response.status, body: await response.clone().text() });
+    return response;
+  };
+  return { http: recording, answers };
+}
 
 export interface RankedItem {
   rank: number;
@@ -132,9 +155,10 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     const adapter = findAdapter(sourceId);
     if (!adapter) throw new Error(`Unknown Source: ${sourceId}`);
 
+    const recorder = recordingHttp(http);
     try {
       // Fetch and validate everything first, so a bad answer leaves the stored rankings untouched.
-      const rankings = await adapter.fetchRankings(http, now, secrets);
+      const rankings = await adapter.fetchRankings(recorder.http, now, secrets);
 
       await db.transaction(async (tx) => {
         await tx
@@ -154,7 +178,33 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
         .values({ id: adapter.id, regionalLanguage: adapter.regionalLanguage, lastError, lastErrorAt: now })
         .onConflictDoUpdate({ target: sources.id, set: { lastError, lastErrorAt: now } });
       throw error;
+    } finally {
+      // The Source row exists by now, whether the ingest succeeded or not.
+      await keepRawResponses(adapter.id, now, recorder.answers);
     }
+  }
+
+  async function keepRawResponses(sourceId: string, now: Date, answers: { url: string; status: number; body: string }[]) {
+    if (answers.length > 0) {
+      await db.insert(rawResponses).values(answers.map((answer) => ({ sourceId, fetchedAt: now, ...answer })));
+    }
+    const cutoff = new Date(now.getTime() - RAW_RESPONSE_DAYS * 24 * 60 * 60 * 1000);
+    await db.delete(rawResponses).where(and(eq(rawResponses.sourceId, sourceId), lt(rawResponses.fetchedAt, cutoff)));
+  }
+
+  /** The raw responses kept for a Source, newest ingest first, each ingest's in request order. */
+  async function getRawResponses(sourceId: string): Promise<RawResponse[]> {
+    return db
+      .select({
+        sourceId: rawResponses.sourceId,
+        fetchedAt: rawResponses.fetchedAt,
+        url: rawResponses.url,
+        status: rawResponses.status,
+        body: rawResponses.body,
+      })
+      .from(rawResponses)
+      .where(eq(rawResponses.sourceId, sourceId))
+      .orderBy(desc(rawResponses.fetchedAt), asc(rawResponses.id));
   }
 
   /** Every Source in the order of the Source config, including those never ingested. */
@@ -232,7 +282,7 @@ export function createDomainCore({ db, http, secrets = {} }: { db: Db; http: Htt
     });
   }
 
-  return { ingest, getSourceRanking, getOverview, getSourceStatuses };
+  return { ingest, getSourceRanking, getOverview, getSourceStatuses, getRawResponses };
 }
 
 export type DomainCore = ReturnType<typeof createDomainCore>;

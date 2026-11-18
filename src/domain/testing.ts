@@ -11,7 +11,7 @@ afterAll(() => testDb.$client.end());
 
 /** Gives each test an empty database. */
 export async function resetTestDb() {
-  await testDb.execute(sql`truncate table source_rankings, items, sources restart identity cascade`);
+  await testDb.execute(sql`truncate table raw_responses, source_rankings, items, sources restart identity cascade`);
 }
 
 /**
