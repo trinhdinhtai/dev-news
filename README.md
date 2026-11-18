@@ -15,6 +15,7 @@ cp .env.example .env          # local database URLs
 docker compose up -d          # Postgres 17 on localhost:5433
 pnpm db:migrate               # apply the migrations in drizzle/
 pnpm ingest hacker-news       # collect one Source into the database
+pnpm ingest github-trending   # needs GITHUB_TOKEN in .env to run more than once or twice an hour
 pnpm dev                      # http://localhost:3000
 ```
 
