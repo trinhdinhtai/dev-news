@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { sourceIds } from "@/domain";
-import { domain } from "@/lib/domain";
+import { cachedDayRanking } from "@/lib/domain";
 import { LocalTime } from "../../local-time";
 import { NoRanking } from "../no-ranking";
 import { RankingLedger } from "../ranking-ledger";
 import { sourceDisplay } from "../source-names";
 
 type Props = { params: Promise<{ sourceId: string }> };
+
+// One static page per Source, rebuilt when collection revalidates that Source's tag.
+export function generateStaticParams() {
+  return sourceIds.map((sourceId) => ({ sourceId }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sourceId } = await params;
@@ -20,13 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SourcePage({ params }: Props) {
-  // Read the database on each request until collection revalidates the page itself.
-  await connection();
   const { sourceId } = await params;
   const display = sourceDisplay[sourceId];
   if (!display || !sourceIds.includes(sourceId)) notFound();
 
-  const ranking = await domain().getSourceRanking({ sourceId, timeWindow: "day" });
+  const ranking = await cachedDayRanking(sourceId);
 
   return (
     <div id="main" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -37,7 +39,7 @@ export default async function SourcePage({ params }: Props) {
         </div>
         {ranking.lastSucceededAt && (
           <Badge variant="outline">
-            Updated <LocalTime iso={ranking.lastSucceededAt.toISOString()} />
+            Updated <LocalTime iso={ranking.lastSucceededAt} />
           </Badge>
         )}
       </div>

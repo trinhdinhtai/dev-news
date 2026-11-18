@@ -13,8 +13,8 @@ function authorized(header: string | null, secret: string) {
 }
 
 /**
- * Marks the cached data of the given Sources as stale (today only the Overview is cached;
- * Source pages read the database on each request), so the next visit rebuilds it.
+ * Marks the cached data of the given Sources as stale (the Overview and each Source's page),
+ * so the next visit rebuilds it.
  * Called by collection after it ingests, with `Authorization: Bearer $REVALIDATE_SECRET`.
  */
 export async function POST(request: Request) {
