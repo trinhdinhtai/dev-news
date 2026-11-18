@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ingest": "tsx --env-file-if-exists=.env scripts/ingest.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",
